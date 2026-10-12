@@ -1,0 +1,60 @@
+Source code of the copyleft-licensed components in this distribution
+=====================================================================
+
+This distribution of Dukehoff MCP for Java bundles the following components under licenses that
+require their source code to be available. All are unmodified. LICENSE lists every bundled file with
+its license; the license texts are in licenses/.
+
+
+GPL-2.0 with Classpath Exception (licenses/GPL-2-CP)
+----------------------------------------------------
+
+nb-javac jdk-27+26 (the javac used by Apache NetBeans)
+  java/modules/ext/nb-javac-jdk-27-26.jar, java/modules/ext/nb-javac-jdk-27-26-api.jar
+  Source: sources/nb-javac-jdk-27+26-sources.jar in this distribution (included, so no written
+  offer is needed); also on Maven Central as com.dukescript.nbjavac:nb-javac:jdk-27+26, classifier
+  sources. The bundled jars are byte-identical to that Maven Central release (checked at build time).
+
+
+Eclipse Public License 1.0 / 2.0 (licenses/EPL-v10*, licenses/EPL-v20)
+------------------------------------------------------------------------
+
+Maven Central, classifier "sources" of the given coordinates:
+  JUnit 4.13.2                junit:junit:4.13.2
+                              platform/modules/ext/junit-4.13.2.jar; java/docs/junit-4.13.2-*.jar
+                              (java/docs/junit-4.13.2-sources.jar is the source itself)
+  JUnit Jupiter 5.10.3        org.junit.jupiter:junit-jupiter-api|engine|params:5.10.3
+                              platform/modules/ext/junit-jupiter-*-5.10.3.jar; java/docs/junit-jupiter-*
+                              (the *-sources.jar files there are the source itself)
+  Eclipse Sisu 1.0.0          org.eclipse.sisu:org.eclipse.sisu.inject:1.0.0,
+                              org.eclipse.sisu:org.eclipse.sisu.plexus:1.0.0  (java/maven/lib/)
+  jakarta.inject 2.6.1        org.glassfish.hk2.external:jakarta.inject:2.6.1
+                              (platform/modules/ext/jersey2/)
+
+Upstream projects:
+  Eclipse TM4E core 0.14.1    ide/modules/ext/org.eclipse.tm4e.core-0.14.1.jar
+                              https://github.com/eclipse-tm4e/tm4e, tag 0.14.1
+  Eclipse Platform and Equinox bundles (extra/modules/org-eclipse-*.jar), versions as in each
+  bundle's MANIFEST.MF (Bundle-Version): core.contenttype 3.4.100, core.jobs 3.5.100, core.net
+  1.2.100, core.runtime 3.7.0, core.runtime.compatibility.auth 3.2.200, equinox.app 1.3.100,
+  equinox.common 3.6.0, equinox.preferences 3.4.2, equinox.security 1.1.1 (Eclipse 3.7.x) and
+  equinox.registry 3.5.200 (Eclipse 3.8). Source: the Eclipse source builds of these releases,
+  https://archive.eclipse.org/eclipse/downloads/drops/R-3.7.2-201202080800/ and
+  https://archive.eclipse.org/eclipse/downloads/drops/R-3.8-201206081200/
+  The JUnit 5 logo (in the module org-netbeans-modules-junit-ui) is part of JUnit 5's source.
+
+
+Common Development and Distribution License 1.0 / 1.1 (licenses/CDDL-*)
+------------------------------------------------------------------------
+
+Maven Central, classifier "sources" of the given coordinates:
+  Jakarta XML Binding 2.3.5   com.sun.xml.bind:jaxb-impl:2.3.5, com.sun.xml.bind:jaxb-xjc:2.3.5
+                              (ide/modules/ext/jaxb/)
+  javax.annotation-api 1.3.2  javax.annotation:javax.annotation-api:1.3.2
+                              (java/maven/lib/, java/modules/ext/maven/)
+  GlassFish CORBA OMG API     org.glassfish.corba:glassfish-corba-omgapi:4.1.0
+                              (java/modules/ext/corba/omgapi/)
+
+Browser icons (CDDL-1.0) inside the module org-netbeans-modules-web-browser-api: the images are
+their own source; they are also in the Apache NetBeans source release, directory
+ide/web.browser.api/src/org/netbeans/modules/web/browser/ui/resources/.

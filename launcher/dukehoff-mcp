@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# Starts a headless NetBeans as MCP server (stdio) for Java code intelligence.
+#
+# Usage: dukehoff-mcp [options] [workspace] [-- extra NetBeans launcher arguments]
+#   workspace          project or folder of projects; default: current directory
+#   --netbeans <path>  NetBeans launcher (bin/netbeans); default: the installation
+#                      this script belongs to, or $DUKEHOFF_MCP_NETBEANS
+#   --jdk <path>       JDK 17+ home; default: $DUKEHOFF_MCP_JDK, $JAVA_HOME, 'java' on PATH
+#   --data <dir>       where per-workspace userdirs and index caches are kept;
+#                      default: $DUKEHOFF_MCP_DATA or ${XDG_CACHE_HOME:-~/.cache}/dukehoff-mcp
+#   --locale <lang>    language of compiler messages; default: en
+#   --check            only print what would be started (and whether a server runs), then exit
+#   --stop             stop the workspace's running server, then exit
+#   --no-daemon        run a server only for this session, ending with it
+#   --tools <list>     tools to offer: comma separated tool names, groups (core, refactor, migrate,
+#                      debug, all) and presets (copilot, claude-code); default: all. With --config, the
+#                      printed registration carries the selection
+#
+# In the dukehoff-mcp runtime the server keeps running between sessions (one per workspace, stopped after
+# 30 minutes without a client); this script then hands over to bin/dukehoff-mcp.jar, which connects to it
+# and starts it when needed. In a NetBeans installation with the module, each session starts its own.
+#   --config <client>  print the configuration that registers this server with a client
+#                      (claude, copilot, vscode, cursor, codex, omp), then exit
+#   --version          print the version, then exit
+#
+# When it starts the server, stdout carries the MCP protocol, so this script then only writes to stderr.
+
+set -u
+
+die() {
+    echo "dukehoff-mcp: $*" >&2
+    exit 2
+}
+
+NETBEANS=${DUKEHOFF_MCP_NETBEANS:-}
+JDK=${DUKEHOFF_MCP_JDK:-}
+DATA=${DUKEHOFF_MCP_DATA:-${XDG_CACHE_HOME:-$HOME/.cache}/dukehoff-mcp}
+LANGUAGE=en
+CHECK=
+STOP=
+NO_DAEMON=
+TOOLS=
+CONFIG=
+WORKSPACE=
+EXTRA=()
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --netbeans) [ $# -ge 2 ] || die "--netbeans needs a path"; NETBEANS=$2; shift 2 ;;
+        --jdk) [ $# -ge 2 ] || die "--jdk needs a path"; JDK=$2; shift 2 ;;
+        --data) [ $# -ge 2 ] || die "--data needs a directory"; DATA=$2; shift 2 ;;
+        --locale) [ $# -ge 2 ] || die "--locale needs a language"; LANGUAGE=$2; shift 2 ;;
+        --check) CHECK=1; shift ;;
+        --stop) STOP=1; shift ;;
+        --tools) [ $# -ge 2 ] || die "--tools needs a list"; TOOLS=$2; shift 2 ;;
+        --no-daemon) NO_DAEMON=1; shift ;;
+        --config) [ $# -ge 2 ] || die "--config needs a client: claude, copilot, vscode, cursor, codex or omp"; CONFIG=$2; shift 2 ;;
+        --version) cat "$(cd "$(dirname "$0")" && pwd)/../VERSION" 2> /dev/null || echo "dukehoff-mcp (version unknown)"; exit 0 ;;
+        -h|--help) sed -n '/^# Starts/,/^# stdout/p' "$0" >&2; exit 0 ;;
+        --) shift; EXTRA=("$@"); break ;;
+        -*) die "unknown option $1 (use -- to pass options to NetBeans)" ;;
+        *) [ -z "$WORKSPACE" ] || die "only one workspace can be given"; WORKSPACE=$1; shift ;;
+    esac
+done
+
+# --- client configuration ------------------------------------------------------
+if [ -n "$CONFIG" ]; then
+    self=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+    # the registration's tool selection, if one was given
+    args=${TOOLS:+\"--tools\", \"$TOOLS\"}
+    cli=${TOOLS:+ --tools $TOOLS}
+    case "$CONFIG" in
+        claude) cat << EOF
+# Claude Code, for all your projects:
+claude mcp add --scope user java -- $self$cli
+# or, shared with the team, .mcp.json in the project:
+{ "mcpServers": { "java": { "command": "$self", "args": [$args] } } }
+# the first start indexes the project; allow time for it (shell profile or ~/.claude/settings.json "env"):
+export MCP_TIMEOUT=120000 MCP_TOOL_TIMEOUT=600000
+EOF
+        ;;
+        copilot) cat << EOF
+// GitHub Copilot CLI: ~/.copilot/mcp-config.json (merge into an existing file); start copilot in the project
+{ "mcpServers": { "java": { "type": "local", "command": "$self", "args": [$args], "tools": ["*"] } } }
+EOF
+        ;;
+        vscode) cat << EOF
+// VS Code (GitHub Copilot agent mode): .vscode/mcp.json in the project
+{ "servers": { "java": { "type": "stdio", "command": "$self", "args": [${args:+$args, }"\${workspaceFolder}"] } } }
+EOF
+        ;;
+        cursor|omp) cat << EOF
+// $CONFIG: .$CONFIG/mcp.json in the project
+{ "mcpServers": { "java": { "command": "$self", "args": [$args] } } }
+EOF
+        ;;
+        codex) cat << EOF
+# Codex CLI: ~/.codex/config.toml
+[mcp_servers.java]
+command = "$self"
+args = [$args]
+startup_timeout_sec = 120
+EOF
+        ;;
+        *) die "unknown client $CONFIG (claude, copilot, vscode, cursor, codex, omp)" ;;
+    esac
+    exit 0
+fi
+
+# --- NetBeans ------------------------------------------------------------------
+NETBEANS_GIVEN=$NETBEANS
+if [ -z "$NETBEANS" ]; then
+    here=$(cd "$(dirname "$0")" && pwd)
+    if [ -x "$here/dukehoffmcp" ]; then
+        # the dukehoff-mcp runtime: bin/dukehoff-mcp next to its NetBeans launcher bin/dukehoffmcp
+        NETBEANS=$here/dukehoffmcp
+    else
+        # unpacked into a NetBeans installation: <netbeans>/<cluster>/bin/dukehoff-mcp
+        NETBEANS=$here/../../bin/netbeans
+    fi
+fi
+[ -x "$NETBEANS" ] || die "NetBeans launcher not found at $NETBEANS; use --netbeans or DUKEHOFF_MCP_NETBEANS"
+NETBEANS=$(cd "$(dirname "$NETBEANS")" && pwd)/$(basename "$NETBEANS")
+
+# Features on Demand (the ergonomics cluster) keeps most modules, this one included, disabled
+# until the IDE's UI asks for them, so --start-mcp-server would be unknown. A headless server
+# needs them all: pass the installation's clusters without ergonomics (a later --clusters wins).
+CLUSTERS=
+nb_home=$(cd "$(dirname "$NETBEANS")/.." && pwd)
+if [ -d "$nb_home/ergonomics" ] && [ -f "$nb_home/etc/netbeans.clusters" ]; then
+    while read -r cluster; do
+        case "$cluster" in
+            ''|'#'*|platform|ergonomics) continue ;;
+            /*) dir=$cluster ;;
+            *) dir=$nb_home/$cluster ;;
+        esac
+        [ -d "$dir" ] && CLUSTERS=${CLUSTERS:+$CLUSTERS:}$dir
+    done < "$nb_home/etc/netbeans.clusters"
+fi
+
+# --- JDK -----------------------------------------------------------------------
+# a usable JDK home: has a release file (unlike /usr on macOS, whose bin/java is a stub), javac and Java 17+
+jdk_ok() {
+    [ -n "$1" ] && [ -f "$1/release" ] && [ -x "$1/bin/java" ] && [ -x "$1/bin/javac" ] || return 1
+    major=$(sed -n 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$1/release")
+    [ -n "$major" ] && [ "$major" -ge 17 ]
+}
+path_jdk() {
+    command -v java > /dev/null || return 0
+    java_bin=$(command -v java)
+    # follow symlinks (sdkman, alternatives, Homebrew) to the real JDK
+    while [ -L "$java_bin" ]; do
+        link=$(readlink "$java_bin")
+        case "$link" in
+            /*) java_bin=$link ;;
+            *) java_bin=$(dirname "$java_bin")/$link ;;
+        esac
+    done
+    (cd "$(dirname "$java_bin")/.." && pwd)
+}
+if [ -n "$JDK" ]; then
+    jdk_ok "$JDK" || die "$JDK is not a JDK 17+ home (needs release, bin/java, bin/javac)"
+else
+    for candidate in "${JAVA_HOME:-}" "$(path_jdk)" \
+            "$( [ -x /usr/libexec/java_home ] && /usr/libexec/java_home -v 17+ 2> /dev/null)"; do
+        if jdk_ok "$candidate"; then
+            JDK=$candidate
+            break
+        fi
+    done
+    [ -n "$JDK" ] || die "no JDK 17+ found in JAVA_HOME, on PATH or via java_home; use --jdk or DUKEHOFF_MCP_JDK"
+fi
+
+# --- workspace and its NetBeans data ---------------------------------------------
+[ -n "$WORKSPACE" ] || WORKSPACE=$PWD
+[ -d "$WORKSPACE" ] || die "workspace $WORKSPACE is not a directory"
+WORKSPACE=$(cd "$WORKSPACE" && pwd)
+
+# --- persistent server (runtime only): dukehoff-mcp.jar connects to it or starts it --------------------
+jar=$(cd "$(dirname "$0")" && pwd)/dukehoff-mcp.jar
+if [ -z "$NO_DAEMON" ] && [ -z "$NETBEANS_GIVEN" ] && [ -f "$jar" ]; then
+    exec "$JDK/bin/java" -jar "$jar" --jdk "$JDK" --data "$DATA" --locale "$LANGUAGE" \
+        ${CHECK:+--check} ${STOP:+--stop} ${TOOLS:+--tools "$TOOLS"} "$WORKSPACE" -- ${EXTRA[@]+"${EXTRA[@]}"}
+fi
+if [ -n "$STOP" ]; then
+    echo "dukehoff-mcp: this installation runs one server per session; nothing to stop" >&2
+    exit 0
+fi
+
+# one userdir and index cache per workspace: kept between runs so only the first start indexes
+id=$(printf '%s' "$WORKSPACE" | cksum | cut -d' ' -f1)
+base=$DATA/$(basename "$WORKSPACE")-$id
+# A NetBeans started on a userdir in use hands its command line to the running instance, which then
+# serves a second client over its CLI socket: the answers never arrived (Copilot CLI switching
+# sessions), and the instance exits with its first client. So a second client on the same workspace
+# gets its own slot (base-2, base-3, ...), claimed with this process's pid: exec keeps it, and it
+# lives as long as NetBeans does.
+dir=$base
+n=1
+while pid=$(cat "$dir/dukehoff-mcp.pid" 2>/dev/null) && [ -n "$pid" ] && [ "$pid" != $$ ] && kill -0 "$pid" 2>/dev/null; do
+    n=$((n + 1))
+    dir=$base-$n
+done
+if [ -n "$CHECK" ]; then
+    printf 'workspace: %s\nnetbeans:  %s\njdk:       %s\ndata:      %s\n' "$WORKSPACE" "$NETBEANS" "$JDK" "$dir" >&2
+    [ -z "$CLUSTERS" ] || printf 'clusters:  %s (without ergonomics)\n' "$CLUSTERS" >&2
+    exit 0
+fi
+mkdir -p "$dir/userdir/var" "$dir/cache" || die "cannot create $dir"
+echo $$ > "$dir/dukehoff-mcp.pid" || die "cannot write $dir/dukehoff-mcp.pid"
+# otherwise a fresh userdir offers to import the settings of an installed NetBeans;
+# that dialog fails headless and NetBeans exits before the server starts
+[ -e "$dir/userdir/var/imported" ] || touch "$dir/userdir/var/imported"
+
+echo "dukehoff-mcp: workspace $WORKSPACE, NetBeans $NETBEANS, JDK $JDK, data $dir" >&2
+
+exec "$NETBEANS" --nogui --nosplash \
+    -J-Djava.awt.headless=true -J-Duser.language="$LANGUAGE" -J-Duser.country= \
+    --jdkhome "$JDK" \
+    --userdir "$dir/userdir" --cachedir "$dir/cache" \
+    ${CLUSTERS:+--clusters "$CLUSTERS"} \
+    ${EXTRA[@]+"${EXTRA[@]}"} \
+    ${TOOLS:+--mcp-tools "$TOOLS"} \
+    --start-mcp-server --mcp-workspace "$WORKSPACE"

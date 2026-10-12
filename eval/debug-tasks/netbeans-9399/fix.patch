@@ -1,0 +1,155 @@
+Fix and tests for apache/netbeans issue #9399, against apache/netbeans at c080a039d. The context
+lines are Apache NetBeans code (Apache License 2.0); git apply skips this text.
+
+diff --git a/java/java.hints/src/org/netbeans/modules/java/hints/errors/Utilities.java b/java/java.hints/src/org/netbeans/modules/java/hints/errors/Utilities.java
+index 4c46eafb8..debe417ff 100644
+--- a/java/java.hints/src/org/netbeans/modules/java/hints/errors/Utilities.java
++++ b/java/java.hints/src/org/netbeans/modules/java/hints/errors/Utilities.java
+@@ -71,6 +71,7 @@ import com.sun.source.tree.Tree.Kind;
+ import com.sun.source.tree.TypeCastTree;
+ import com.sun.source.tree.VariableTree;
+ import com.sun.source.tree.WhileLoopTree;
++import com.sun.source.tree.YieldTree;
+ import com.sun.source.util.SourcePositions;
+ import com.sun.source.util.TreePath;
+ import org.netbeans.api.java.source.support.ErrorAwareTreeScanner;
+@@ -1403,12 +1404,22 @@ public class Utilities {
+         
+         @Override
+         public Boolean visitSwitch(SwitchTree node, Void p) {
++            return generalizedSwitch(node.getExpression(), node.getCases(), false);
++        }
++
++        @Override
++        public Boolean visitSwitchExpression(SwitchExpressionTree node, Void p) {
++            // a switch expression is exhaustive; it exits only if no case yields a value
++            return generalizedSwitch(node.getExpression(), node.getCases(), true);
++        }
++
++        private Boolean generalizedSwitch(ExpressionTree expression, List<? extends CaseTree> cases, boolean exhaustive) {
+             boolean lastCaseExit = false;
+-            boolean defaultSeen = false;
++            boolean defaultSeen = exhaustive;
+             Set<Element> enumValues = null;
+-            
+-            if (node.getExpression() != null) {
+-                TypeMirror exprType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getExpression()));
++
++            if (expression != null) {
++                TypeMirror exprType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), expression));
+                 if (isValidType(exprType) && exprType.getKind() == TypeKind.DECLARED) {
+                     Element el = ((DeclaredType)exprType).asElement();
+                     enumValues = new HashSet<>();
+@@ -1419,11 +1430,15 @@ public class Utilities {
+                     }
+                 }
+             }
+-            for (CaseTree ct : node.getCases()) {
++            for (CaseTree ct : cases) {
+                 Boolean res = scan(ct, null);
+                 if (res == Boolean.FALSE) {
+                     return res;
+                 }
++                if (ct.getCaseKind() == CaseTree.CaseKind.RULE && res != Boolean.TRUE) {
++                    // a rule does not fall through: one that completes normally (or yields) completes the switch
++                    return false;
++                }
+                 lastCaseExit = res == Boolean.TRUE;
+                 if (ct.getExpression() == null) {
+                     defaultSeen = true;
+@@ -1462,6 +1477,17 @@ public class Utilities {
+             return visitBreak(null, p);
+         }
+ 
++        @Override
++        public Boolean visitYield(YieldTree node, Void p) {
++            // yield completes the enclosing switch expression normally, like a break out of it
++            Tree target = info.getTreeUtilities().getBreakContinueTargetTree(getCurrentPath());
++            boolean known = seenTrees.contains(target);
++            if (known) {
++                targetTrees.add(target);
++            }
++            return !known;
++        }
++
+         @Override
+         public Boolean visitClass(ClassTree node, Void p) {
+             return false;
+diff --git a/java/java.hints/test/unit/src/org/netbeans/modules/java/hints/bugs/UnusedAssignmentOrBranchTest.java b/java/java.hints/test/unit/src/org/netbeans/modules/java/hints/bugs/UnusedAssignmentOrBranchTest.java
+index 94532dbf0..3f1dac58a 100644
+--- a/java/java.hints/test/unit/src/org/netbeans/modules/java/hints/bugs/UnusedAssignmentOrBranchTest.java
++++ b/java/java.hints/test/unit/src/org/netbeans/modules/java/hints/bugs/UnusedAssignmentOrBranchTest.java
+@@ -230,6 +230,73 @@ public class UnusedAssignmentOrBranchTest extends NbTestCase {
+                 .assertWarnings();
+     }
+ 
++    public void testSwitchExpressionWithThrowingCase9399() throws Exception {
++        HintTest
++                .create()
++                .input("package test;\n" +
++                       "public class Test {\n" +
++                       "    public void f() {\n" +
++                       "        String data = null;\n" +
++                       "        Object o = g(null);\n" +
++                       "        if (o != null) {\n" +
++                       "            data = switch (o) {\n" +
++                       "                case Integer i -> \"i\";\n" +
++                       "                default -> throw new IllegalArgumentException();\n" +
++                       "            };\n" +
++                       "        }\n" +
++                       "        g(data);\n" +
++                       "    }\n" +
++                       "    Object g(Object o) {\n" +
++                       "        return 1;\n" +
++                       "    }\n" +
++                       "}\n")
++                .sourceLevel("21")
++                .run(UnusedAssignmentOrBranch.class)
++                .assertWarnings();
++    }
++
++    public void testSwitchStatementRulesWithThrowingCase9399() throws Exception {
++        HintTest
++                .create()
++                .input("package test;\n" +
++                       "public class Test {\n" +
++                       "    public void f(int k) {\n" +
++                       "        String data = null;\n" +
++                       "        if (k > 0) {\n" +
++                       "            switch (k) {\n" +
++                       "                case 1 -> data = \"a\";\n" +
++                       "                default -> throw new IllegalArgumentException();\n" +
++                       "            }\n" +
++                       "        }\n" +
++                       "        System.err.println(data);\n" +
++                       "    }\n" +
++                       "}\n")
++                .sourceLevel("21")
++                .run(UnusedAssignmentOrBranch.class)
++                .assertWarnings();
++    }
++
++    public void testSwitchExpressionStatementCasesWithThrowingCase9399() throws Exception {
++        HintTest
++                .create()
++                .input("package test;\n" +
++                       "public class Test {\n" +
++                       "    public void f(Object o) {\n" +
++                       "        String data = null;\n" +
++                       "        if (o != null) {\n" +
++                       "            data = switch (o) {\n" +
++                       "                case Integer i: yield \"i\";\n" +
++                       "                default: throw new IllegalArgumentException();\n" +
++                       "            };\n" +
++                       "        }\n" +
++                       "        System.err.println(data);\n" +
++                       "    }\n" +
++                       "}\n")
++                .sourceLevel("21")
++                .run(UnusedAssignmentOrBranch.class)
++                .assertWarnings();
++    }
++
+     private boolean isRecordClassPresent() {
+         try {
+             Class.forName("java.lang.Record");

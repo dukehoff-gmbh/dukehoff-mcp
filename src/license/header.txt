@@ -1,0 +1,2 @@
+Copyright ${license.year} ${license.owner}
+SPDX-License-Identifier: Apache-2.0

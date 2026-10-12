@@ -1,0 +1,5 @@
+{
+  "name": "java",
+  "version": "0.1.0",
+  "description": "Refactor Java code across files and find usages with the java MCP server (dukehoff-mcp)."
+}

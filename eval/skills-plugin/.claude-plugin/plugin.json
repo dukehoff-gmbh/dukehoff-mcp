@@ -1,0 +1,5 @@
+{
+  "name": "java-code-intelligence",
+  "version": "0.1.0",
+  "description": "Workflows for changing and analyzing Java code with the java MCP server (dukehoff-mcp): API changes across implementations and callers, impact analysis before a change."
+}
