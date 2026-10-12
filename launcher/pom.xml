@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2026 Dukehoff GmbH
+    SPDX-License-Identifier: Apache-2.0
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.dukehoff.mcp</groupId>
+        <artifactId>dukehoff-mcp-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>dukehoff-mcp-launcher</artifactId>
+    <packaging>jar</packaging>
+    <name>dukehoff-mcp launcher</name>
+    <description>Starts the runtime's headless NetBeans as MCP server on any platform (java -jar bin/dukehoff-mcp.jar), Windows included.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>dukehoff-mcp</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <!-- no module manifest here: overrides the parent's NetBeans manifestFile -->
+                        <manifestFile combine.self="override"/>
+                        <manifest>
+                            <mainClass>com.dukehoff.mcp.launcher.Launcher</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

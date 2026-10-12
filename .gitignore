@@ -1,0 +1,11 @@
+target/
+*.iml
+.idea/
+.DS_Store
+.claude/settings.local.json
+
+# internal working notes (agent instructions, plans, decisions): kept in a private repository,
+# linked here locally; never commit them to this repository
+CLAUDE.md
+CLAUDE.local.md
+OPEN-CORE-INVENTORY.md

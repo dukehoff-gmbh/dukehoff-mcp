@@ -1,0 +1,10 @@
+Dukehoff MCP for Java (dukehoff-mcp)
+Copyright 2026 Dukehoff GmbH
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It runs on Apache NetBeans (https://netbeans.apache.org/), developed by The Apache Software
+Foundation and licensed under the Apache License, Version 2.0; dukehoff-mcp is not part of, nor endorsed
+by, the Apache NetBeans project. The runtime distribution built from this repository bundles
+NetBeans and third-party components under their own licenses; their notices and license texts are
+in runtime/src/main/licenses (NOTICE, LICENSE and licenses/).
