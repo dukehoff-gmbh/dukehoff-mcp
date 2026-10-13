@@ -97,6 +97,35 @@ final class Proxy {
         return relay(connection.get(), tools, workspace, System.in, new FileOutputStream(FileDescriptor.out));
     }
 
+    /**
+     * Like {@link #runConnected} with the socket path read from a file that the VS Code extension
+     * writes once NetBeans runs; waits up to {@link #START_TIMEOUT_MILLIS} until the file names a
+     * server that answers. A line {@code error: <message>} ends the wait with that message.
+     */
+    int runConnectedFile(Path file, String tools, String workspace) throws IOException, InterruptedException {
+        long deadline = System.currentTimeMillis() + START_TIMEOUT_MILLIS;
+        String problem = "the server's address (" + file + ") was not written";
+        while (System.currentTimeMillis() < deadline) {
+            if (Files.isRegularFile(file)) {
+                String content = Files.readString(file, StandardCharsets.UTF_8).strip();
+                if (content.startsWith("error:")) {
+                    err.println("dukehoff-mcp: " + content.substring("error:".length()).strip());
+                    return 1;
+                }
+                if (!content.isEmpty()) {
+                    Optional<Connection> c = tryConnectSocket(Paths.get(content));
+                    if (c.isPresent()) {
+                        return relay(c.get(), tools, workspace, System.in, new FileOutputStream(FileDescriptor.out));
+                    }
+                    problem = "no server answers on " + content;
+                }
+            }
+            Thread.sleep(500);
+        }
+        err.println("dukehoff-mcp: " + problem + " within " + START_TIMEOUT_MILLIS / 1000 + " s (is the Apache NetBeans extension running?)");
+        return 1;
+    }
+
     Connection connect(Path base, String version, Function<Path, List<String>> start) throws IOException, InterruptedException {
         for (int n = 1; ; n++) {
             Path dir = Launcher.slotDir(base, n);
