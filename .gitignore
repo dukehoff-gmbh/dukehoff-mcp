@@ -9,3 +9,4 @@ target/
 CLAUDE.md
 CLAUDE.local.md
 OPEN-CORE-INVENTORY.md
+__pycache__/
