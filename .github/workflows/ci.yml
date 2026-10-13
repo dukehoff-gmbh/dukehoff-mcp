@@ -41,6 +41,13 @@ jobs:
         env:
           JDK_HOME: ${{ env.JAVA_HOME }}
 
+      # the same checks on Windows, through the Java launcher (java -jar, as Windows clients start it)
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: python tests/smoke/smoke.py runtime/target/dukehoffmcp/bin/dukehoff-mcp.jar
+        env:
+          JDK_HOME: ${{ env.JAVA_HOME }}
+
       - name: Keep the distribution
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
