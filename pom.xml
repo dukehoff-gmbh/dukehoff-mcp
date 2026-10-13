@@ -142,6 +142,14 @@
                                 <exclude>**/.DS_Store</exclude>
                                 <exclude>.claude/**</exclude>
                                 <exclude>**/target/**</exclude>
+                                <!-- the VS Code extension: npm packages, compiled and collected files -->
+                                <exclude>**/node_modules/**</exclude>
+                                <exclude>vscode/out/**</exclude>
+                                <exclude>vscode/bin/**</exclude>
+                                <exclude>vscode/nbcode/**</exclude>
+                                <exclude>vscode/LICENSE</exclude>
+                                <exclude>vscode/NOTICE</exclude>
+                                <exclude>**/.vscodeignore</exclude>
                                 <!-- internal working notes, not part of the published repository -->
                                 <exclude>CLAUDE.md</exclude>
                                 <!-- third-party license texts and the generated inventory -->
@@ -166,6 +174,8 @@
                     </licenseSets>
                     <mapping>
                         <java>SLASHSTAR_STYLE</java>
+                        <!-- not the default ///: triple-slash lines are compiler directives in TypeScript -->
+                        <ts>SLASHSTAR_STYLE</ts>
                         <md>XML_STYLE</md>
                         <conf>SCRIPT_STYLE</conf>
                         <cmd>BATCH</cmd>
