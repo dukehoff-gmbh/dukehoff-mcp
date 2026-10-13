@@ -24,6 +24,7 @@ You need a JDK 17 or newer and Maven.
 ```sh
 mvn clean package                                       # the NetBeans module, the runtime, unit tests
 tests/smoke/smoke.sh runtime/target/dukehoffmcp/bin/dukehoff-mcp    # every tool end to end; exit 0 = pass
+python tests/smoke/smoke.py runtime/target/dukehoffmcp/bin/dukehoff-mcp.jar   # the same on any OS (Windows)
 ```
 
 The runtime is a headless Apache NetBeans built from the NetBeans clusters on Maven Central; the
