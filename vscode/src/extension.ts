@@ -10,13 +10,16 @@ import * as vscode from 'vscode';
  * Registers the Java MCP server for Copilot (and any agent in VS Code). The server runs inside the
  * NetBeans of the Apache NetBeans extension, which loads our module from nbcode/ of this extension.
  * Each workspace folder gets a stdio server definition: the launcher's proxy
- * (java -jar bin/dukehoff-mcp.jar --connect <socket> <folder>); the socket comes from the LSP command
- * nbls.dukehoff-mcp.connection, which starts the server inside NetBeans on its first call.
+ * (java -jar bin/dukehoff-mcp.jar --connect-file <file> <folder>). This extension writes the server's
+ * socket into that file once NetBeans runs (LSP command nbls.dukehoff-mcp.connection, which starts the
+ * server inside NetBeans on its first call); the proxy waits for it. Not through
+ * resolveMcpServerDefinition: Copilot's agent host starts servers without calling it.
  */
 
 const NETBEANS = 'asf.apache-netbeans-java';
 const CONNECTION = 'nbls.dukehoff-mcp.connection';
 const CONNECT_TIMEOUT_MS = 180_000;
+const JAVA_PROJECT = '{**/pom.xml,**/build.gradle,**/build.gradle.kts,**/build.xml,**/*.java}';
 
 export function activate(context: vscode.ExtensionContext): void {
     const log = vscode.window.createOutputChannel('Dukehoff MCP for Java');
@@ -24,42 +27,55 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(log, changed, vscode.workspace.onDidChangeWorkspaceFolders(() => changed.fire()));
     const jar = path.join(context.extensionPath, 'bin', 'dukehoff-mcp.jar');
     const version: string = context.extension.packageJSON.version;
+    const storage = (context.storageUri ?? context.globalStorageUri).fsPath;
+    const connectionFile = path.join(storage, 'connection');
+    fs.mkdirSync(storage, { recursive: true });
+    fs.rmSync(connectionFile, { force: true }); // an earlier NetBeans' socket
 
     context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('dukehoff-mcp', {
         onDidChangeMcpServerDefinitions: changed.event,
-
         provideMcpServerDefinitions: () => {
             const folders = vscode.workspace.workspaceFolders ?? [];
             return folders.map(folder => new vscode.McpStdioServerDefinition(
                 folders.length > 1 ? `Java (${folder.name})` : 'Java',
                 javaCommand(),
-                // the socket (index 3) is filled in when the server starts
-                ['-jar', jar, '--connect', '', folder.uri.fsPath],
+                ['-jar', jar, '--connect-file', connectionFile, folder.uri.fsPath],
                 {},
                 version));
-        },
-
-        resolveMcpServerDefinition: async (server: vscode.McpServerDefinition) => {
-            if (!(server instanceof vscode.McpStdioServerDefinition)) {
-                return server;
-            }
-            if (vscode.workspace.getConfiguration('netbeans').get<boolean>('javaSupport.enabled') === false) {
-                throw new Error('Dukehoff MCP for Java needs NetBeans\' Java support: enable the setting netbeans.javaSupport.enabled');
-            }
-            const socket = await connection(log);
-            server.args[3] = socket;
-            log.appendLine(`starting ${server.label}: ${server.command} ${server.args.join(' ')}`);
-            return server;
         }
     }));
+
+    // only for Java workspaces: activating the NetBeans extension starts NetBeans
+    vscode.workspace.findFiles(JAVA_PROJECT, '**/node_modules/**', 1).then(found => {
+        if (found.length > 0) {
+            writeConnection(connectionFile, log);
+        } else {
+            log.appendLine('no Java project in this workspace; NetBeans is not started for the MCP server');
+        }
+    });
 }
 
 export function deactivate(): void {
     // the server lives inside NetBeans and ends with it
 }
 
-/** The socket of the server inside NetBeans: starts the Apache extension and waits for its LSP server. */
+/** Writes the socket of the server inside NetBeans (or "error: ...") for the proxy to read. */
+async function writeConnection(file: string, log: vscode.OutputChannel): Promise<void> {
+    let content: string;
+    try {
+        content = await connection(log);
+        log.appendLine(`server inside NetBeans: ${content}`);
+    } catch (e) {
+        content = `error: ${e instanceof Error ? e.message : String(e)}`;
+        log.appendLine(content);
+    }
+    fs.writeFileSync(file, content + '\n', 'utf8');
+}
+
 async function connection(log: vscode.OutputChannel): Promise<string> {
+    if (vscode.workspace.getConfiguration('netbeans').get<boolean>('javaSupport.enabled') === false) {
+        throw new Error('Dukehoff MCP for Java needs NetBeans\' Java support: enable the setting netbeans.javaSupport.enabled');
+    }
     const netbeans = vscode.extensions.getExtension(NETBEANS);
     if (!netbeans) {
         throw new Error(`the extension ${NETBEANS} (Apache NetBeans Language Server) is not installed`);
@@ -72,7 +88,7 @@ async function connection(log: vscode.OutputChannel): Promise<string> {
             // registered by the language client once NetBeans' LSP server runs
             const answer = await vscode.commands.executeCommand<{ socket?: string; version?: string }>(CONNECTION);
             if (answer?.socket) {
-                log.appendLine(`server inside NetBeans: ${answer.socket} (version ${answer.version})`);
+                log.appendLine(`NetBeans module version ${answer.version}`);
                 return answer.socket;
             }
             last = answer;

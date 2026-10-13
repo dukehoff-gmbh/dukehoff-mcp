@@ -181,8 +181,13 @@ expect("a second call returns the same socket", ((again or {}).get("result") or 
 
 # --- MCP through the proxy, as our VS Code extension registers it --------------------------------------
 
-proxy = subprocess.Popen([java, "-jar", jar, "--connect", result["socket"], project], stdin=subprocess.PIPE,
+# as in VS Code: the agent may start the proxy before the extension has written the socket's file
+connection_file = os.path.join(work, "connection")
+proxy = subprocess.Popen([java, "-jar", jar, "--connect-file", connection_file, project], stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=open(os.path.join(work, "proxy.stderr"), "w"), text=True, bufsize=1)
+time.sleep(3)
+with open(connection_file, "w") as f:
+    f.write(result["socket"] + "\n")
 mcp_id = 0
 
 
