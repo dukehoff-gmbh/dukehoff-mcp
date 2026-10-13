@@ -1,0 +1,87 @@
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: Release
+
+# A tag v<version> (e.g. v0.1.0) builds that version, runs the smoke test and publishes a GitHub
+# release with the runtime archives and their checksums. Started by hand (Actions > Release > Run
+# workflow) it is a dry run: the same build and test, the archives only as a workflow artifact.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for the dry run, e.g. 0.1.0'
+        required: true
+        default: '0.0.0-dryrun'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Version
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then version=${GITHUB_REF_NAME#v}; else version=${{ inputs.version }}; fi
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' || { echo "not a version: $version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # the version in the poms comes from the tag; nothing is committed
+      - name: Build
+        run: |
+          mvn -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false -DprocessAllModules=true
+          mvn -B -ntp clean package
+
+      - name: Smoke test
+        run: tests/smoke/smoke.sh runtime/target/dukehoffmcp/bin/dukehoff-mcp
+        env:
+          JDK_HOME: ${{ env.JAVA_HOME }}
+
+      - name: Checksums
+        working-directory: runtime/target
+        run: sha256sum dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz dukehoff-mcp-${{ steps.version.outputs.version }}.zip > SHA256SUMS
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        working-directory: runtime/target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cat > notes.md <<EOF
+          Dukehoff MCP for Java ${VERSION}: unpack the archive (\`.tar.gz\` for macOS and Linux, \`.zip\`
+          for Windows), then register it with your agent as described in the
+          [README](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/README.md#installation).
+          Needs a JDK 17 or newer. \`SHA256SUMS\` has the checksums of both archives.
+          EOF
+          prerelease=; case "$VERSION" in *-*) prerelease=--prerelease ;; esac
+          gh release create "${GITHUB_REF_NAME}" --title "Dukehoff MCP for Java ${VERSION}" \
+              --notes-file notes.md --generate-notes $prerelease \
+              "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" SHA256SUMS
+
+      - name: Keep the archives (dry run)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dukehoff-mcp-${{ steps.version.outputs.version }}
+          path: |
+            runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz
+            runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.zip
+            runtime/target/SHA256SUMS
+          retention-days: 7
