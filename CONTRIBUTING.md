@@ -48,6 +48,14 @@ run costs tokens; it is not needed for most changes.
   (tokens, time or correctness); the evaluation in `eval/` is where that is measured.
 - Small, focused commits with a message that says why.
 
+## Releasing (maintainers)
+
+A tag `v<version>` on `main` (e.g. `git tag -s v0.1.0 && git push origin v0.1.0`) starts the Release
+workflow: it builds that version (the poms stay at their `-SNAPSHOT` version in the repository),
+runs the smoke test and publishes a GitHub release with `dukehoff-mcp-<version>.tar.gz`, `.zip` and
+`SHA256SUMS`. Versions with a suffix (`0.2.0-rc1`) become pre-releases. Actions > Release > Run
+workflow is a dry run of the same steps, without a release.
+
 ## Reporting security issues
 
 Please do not open a public issue for a vulnerability; see [SECURITY.md](SECURITY.md).

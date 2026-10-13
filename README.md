@@ -45,15 +45,18 @@ com.acme.Foo#<init>()           com.acme.Foo#Foo(String)
 Requirements on the target machine:
 
 * **Windows, macOS or Linux.** On Windows the server is started with `java -jar bin\dukehoff-mcp.jar`
-  (`bin/dukehoff-mcp`, a bash script, does the same on macOS and Linux). Windows is not yet tested on a
-  Windows machine; please report what does not work.
+  (`bin/dukehoff-mcp`, a bash script, does the same on macOS and Linux). CI runs the end-to-end
+  smoke test on all three.
 * **A JDK 17 or newer**, a full JDK with `javac` (a JRE is not enough). `dukehoff-mcp` takes `--jdk`,
   `$DUKEHOFF_MCP_JDK`, `$JAVA_HOME`, the `java` on the `PATH` or (macOS) `/usr/libexec/java_home`, in
   this order. Use a JDK at least as new as the Java version of your projects: NetBeans compiles
   them against that JDK's class library unless a project names another platform.
 * For Maven and Gradle projects the usual access to their dependencies (see Troubleshooting).
 
-Unpack the archive anywhere, for example to `/opt` or `C:\tools`:
+Download the archive of the latest release from the
+[Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases): `dukehoff-mcp-<version>.tar.gz`
+for macOS and Linux, `dukehoff-mcp-<version>.zip` for Windows (`SHA256SUMS` has their checksums;
+building it yourself: see Building). Unpack it anywhere, for example to `/opt` or `C:\tools`:
 
 ```sh
 tar xzf dukehoff-mcp-<version>.tar.gz -C /opt      # creates /opt/dukehoffmcp, about 270 MB
