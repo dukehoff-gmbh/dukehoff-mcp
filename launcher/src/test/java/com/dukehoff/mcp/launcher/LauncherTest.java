@@ -90,9 +90,11 @@ public class LauncherTest {
 
     @Test
     public void copilotCliConfigHasTypeLocalAndAllTools() throws Exception {
-        String copilot = Launcher.config("copilot", Paths.get("/jdk/bin/java"), Paths.get("/opt/dukehoffmcp/bin/dukehoff-mcp.jar"));
-        assertTrue(copilot, copilot.contains("{ \"mcpServers\": { \"java\": { \"type\": \"local\", \"command\": \"/jdk/bin/java\", "
-                + "\"args\": [\"-jar\", \"/opt/dukehoffmcp/bin/dukehoff-mcp.jar\"], \"tools\": [\"*\"] } } }"));
+        Path java = Paths.get("/jdk/bin/java");
+        Path jar = Paths.get("/opt/dukehoffmcp/bin/dukehoff-mcp.jar");
+        String copilot = Launcher.config("copilot", java, jar);
+        assertTrue(copilot, copilot.contains("{ \"mcpServers\": { \"java\": { \"type\": \"local\", \"command\": \"" + json(java) + "\", "
+                + "\"args\": [\"-jar\", \"" + json(jar) + "\"], \"tools\": [\"*\"] } } }"));
     }
 
     @Test
@@ -100,11 +102,16 @@ public class LauncherTest {
         Path java = Paths.get("/jdk/bin/java");
         Path jar = Paths.get("/opt/dukehoffmcp/bin/dukehoff-mcp.jar");
         assertTrue(Launcher.config("copilot", java, jar, "copilot").contains(
-                "\"args\": [\"-jar\", \"/opt/dukehoffmcp/bin/dukehoff-mcp.jar\", \"--tools\", \"copilot\"], \"tools\": [\"*\"]"));
+                "\"args\": [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"copilot\"], \"tools\": [\"*\"]"));
         assertTrue(Launcher.config("vscode", java, jar, "core,migrate").contains(
-                "\"args\": [\"-jar\", \"/opt/dukehoffmcp/bin/dukehoff-mcp.jar\", \"--tools\", \"core,migrate\", \"${workspaceFolder}\"]"));
-        assertTrue(Launcher.config("claude", java, jar, "all").contains("-jar \"/opt/dukehoffmcp/bin/dukehoff-mcp.jar\" --tools all\n"));
-        assertTrue(Launcher.config("codex", java, jar, "core").contains("args = [\"-jar\", \"/opt/dukehoffmcp/bin/dukehoff-mcp.jar\", \"--tools\", \"core\"]"));
+                "\"args\": [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"core,migrate\", \"${workspaceFolder}\"]"));
+        assertTrue(Launcher.config("claude", java, jar, "all").contains("-jar \"" + jar + "\" --tools all\n"));
+        assertTrue(Launcher.config("codex", java, jar, "core").contains("args = [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"core\"]"));
+    }
+
+    /** A path as the configurations write it into JSON and TOML: on Windows its backslashes escaped. */
+    private static String json(Path p) {
+        return p.toString().replace("\\", "\\\\");
     }
 
     @Test
