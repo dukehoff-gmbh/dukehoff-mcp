@@ -57,7 +57,7 @@ public class ProxyTest {
             assertEquals(Long.toString(c.hello().pid()), Files.readString(base.resolve(Launcher.PID_FILE)));
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            int status = proxy.relay(c, "core", new ByteArrayInputStream("{\"a\":1}\n{\"b\":2}\n".getBytes(StandardCharsets.UTF_8)), out);
+            int status = proxy.relay(c, "core", null, new ByteArrayInputStream("{\"a\":1}\n{\"b\":2}\n".getBytes(StandardCharsets.UTF_8)), out);
             assertEquals("echo:{\"a\":1}\necho:{\"b\":2}\n", out.toString(StandardCharsets.UTF_8));
             assertEquals("the client closed stdin", 0, status);
 
@@ -66,7 +66,7 @@ public class ProxyTest {
                 throw new AssertionError("must not start another daemon");
             });
             ByteArrayOutputStream nothing = new ByteArrayOutputStream();
-            assertEquals(2, proxy.relay(refused, "bad", new ByteArrayInputStream(new byte[0]), nothing));
+            assertEquals(2, proxy.relay(refused, "bad", null, new ByteArrayInputStream(new byte[0]), nothing));
             assertEquals("", nothing.toString(StandardCharsets.UTF_8));
             assertTrue(messages.toString(StandardCharsets.UTF_8),
                     messages.toString(StandardCharsets.UTF_8).contains("dukehoff-mcp: Unknown tool, group or preset 'bad' in --tools bad. Presets: copilot/x"));

@@ -59,6 +59,8 @@ public final class Workspace {
     private static final String INDEXED_MARKER = "dukehoff-mcp/indexed";
 
     private final File root;
+    /** Inside another NetBeans (the VS Code extension's): leave its global settings alone. */
+    private final boolean embedded;
     /** Projects opened (before the initial scan). */
     private final CompletableFuture<List<Project>> opened = new CompletableFuture<>();
     /** The initial scan finished. */
@@ -66,7 +68,16 @@ public final class Workspace {
     private volatile String phase = "starting";
 
     public Workspace(File root) {
+        this(root, false);
+    }
+
+    /**
+     * @param embedded the server runs inside a NetBeans it does not own (the Apache NetBeans
+     *        extension for VS Code): its user's settings, such as Gradle trust, are not changed
+     */
+    public Workspace(File root, boolean embedded) {
         this.root = FileUtil.normalizeFile(root);
+        this.embedded = embedded;
     }
 
     public File getRoot() {
@@ -102,7 +113,10 @@ public final class Workspace {
     }
 
     public void openAsync() {
-        RP.post(this::open);
+        // in the caller's lookup: inside the VS Code extension's NetBeans, open projects belong to the
+        // LSP client's context (for our own runtime this is the default lookup anyway)
+        Lookup context = Lookup.getDefault();
+        RP.post(() -> Lookups.executeWith(context, this::open));
     }
 
     private void open() {
@@ -111,7 +125,9 @@ public final class Workspace {
             if (dir == null || !dir.isFolder()) {
                 throw new IOException("Workspace folder does not exist: " + root);
             }
-            trustGradleBuilds();
+            if (!embedded) {
+                trustGradleBuilds();
+            }
             phase = "looking for projects";
             Set<Project> projects = new LinkedHashSet<>();
             collectProjects(dir, projects);

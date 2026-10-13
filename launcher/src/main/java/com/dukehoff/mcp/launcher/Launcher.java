@@ -55,6 +55,8 @@ public final class Launcher {
             "  --config <client>  print the configuration that registers this server with a client",
             "                     (claude, copilot, vscode, cursor, codex, omp), then exit",
             "  --version          print the version, then exit",
+            "  --connect <socket> relay stdio to a server already listening on this socket (the one inside",
+            "                     the Apache NetBeans extension for VS Code) for the workspace; starts nothing",
             "",
             "When it starts the server, stdout carries the MCP protocol, so this launcher then only writes to stderr.");
 
@@ -104,6 +106,7 @@ public final class Launcher {
         String tools;
         String config;
         boolean version;
+        Path connect;
         Path workspace;
         final List<String> extra = new ArrayList<>();
     }
@@ -122,6 +125,7 @@ public final class Launcher {
                 case "--tools" -> o.tools = value(args, ++i, a);
                 case "--config" -> o.config = value(args, ++i, "--config needs a client: claude, copilot, vscode, cursor, codex or omp;");
                 case "--version" -> o.version = true;
+                case "--connect" -> o.connect = Paths.get(value(args, ++i, a));
                 case "-h", "--help" -> throw new UsageException("\n" + USAGE);
                 case "--" -> {
                     o.extra.addAll(List.of(args).subList(i + 1, args.length));
@@ -169,6 +173,11 @@ public final class Launcher {
         Map<String, String> env = System.getenv();
         Options o = parse(args, env);
         Path home = jar.toAbsolutePath().getParent().getParent();
+        if (o.connect != null) {
+            // the server runs elsewhere (inside the VS Code extension's NetBeans): no runtime, no JDK needed
+            String workspace = o.workspace == null ? null : o.workspace.toAbsolutePath().normalize().toString();
+            return new Proxy(System.err).runConnected(o.connect, o.tools, workspace);
+        }
         if (o.version) {
             Path version = home.resolve("VERSION");
             System.out.println(Files.exists(version) ? Files.readString(version).strip() : "dukehoff-mcp (version unknown)");
