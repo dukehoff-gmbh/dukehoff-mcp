@@ -31,6 +31,8 @@
         <!-- before runtime, which copies its jar into bin/ -->
         <module>launcher</module>
         <module>runtime</module>
+        <!-- after launcher and runtime, whose output it packages -->
+        <module>vscode</module>
     </modules>
 
     <properties>

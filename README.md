@@ -111,8 +111,15 @@ check, so allow time: `MCP_TIMEOUT=120000 MCP_TOOL_TIMEOUT=600000` (shell profil
 
 ### VS Code (GitHub Copilot agent mode)
 
-`.vscode/mcp.json` in the project (or the user configuration, command palette "MCP: Open User
-Configuration", for all projects):
+The easiest way is the **VS Code extension** `dukehoff-mcp-java-<version>.vsix` from the
+[Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases) (Extensions view, "..." menu,
+"Install from VSIX..."). It needs no download of the runtime above: it brings the Apache NetBeans
+Language Server extension along and runs inside its NetBeans; the tools appear in Copilot's agent mode
+as the server **Java**. It needs NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the
+default).
+
+With the standalone runtime instead: `.vscode/mcp.json` in the project (or the user configuration,
+command palette "MCP: Open User Configuration", for all projects):
 
 ```json
 { "servers": { "java": { "type": "stdio", "command": "/opt/dukehoffmcp/bin/dukehoff-mcp", "args": ["${workspaceFolder}"] } } }
