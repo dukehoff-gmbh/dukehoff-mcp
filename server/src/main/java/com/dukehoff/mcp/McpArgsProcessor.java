@@ -125,7 +125,7 @@ public final class McpArgsProcessor implements ArgsProcessor {
         return module == null ? "unknown" : module.getImplementationVersion() + " " + module.getBuildVersion();
     }
 
-    private static List<Tool> tools(Workspace ws) {
+    static List<Tool> tools(Workspace ws) {
         return List.of(
                 new FindSymbolTool(ws),
                 new FindUsagesTool(ws),
