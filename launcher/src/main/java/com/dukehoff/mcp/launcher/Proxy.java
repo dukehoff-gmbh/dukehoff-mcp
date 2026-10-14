@@ -81,7 +81,49 @@ final class Proxy {
      */
     int run(Path base, String version, Function<Path, List<String>> start, String tools) throws IOException, InterruptedException {
         Connection connection = connect(base, version, start);
-        return relay(connection, tools, System.in, new FileOutputStream(FileDescriptor.out));
+        return relay(connection, tools, null, System.in, new FileOutputStream(FileDescriptor.out));
+    }
+
+    /**
+     * Relays stdio to a server that already listens on {@code socket} (inside the VS Code extension's
+     * NetBeans) for a workspace folder; starts and stops nothing.
+     */
+    int runConnected(Path socket, String tools, String workspace) throws IOException, InterruptedException {
+        Optional<Connection> connection = tryConnectSocket(socket);
+        if (connection.isEmpty()) {
+            err.println("dukehoff-mcp: no server answers on " + socket + " (is the Apache NetBeans extension running?)");
+            return 1;
+        }
+        return relay(connection.get(), tools, workspace, System.in, new FileOutputStream(FileDescriptor.out));
+    }
+
+    /**
+     * Like {@link #runConnected} with the socket path read from a file that the VS Code extension
+     * writes once NetBeans runs; waits up to {@link #START_TIMEOUT_MILLIS} until the file names a
+     * server that answers. A line {@code error: <message>} ends the wait with that message.
+     */
+    int runConnectedFile(Path file, String tools, String workspace) throws IOException, InterruptedException {
+        long deadline = System.currentTimeMillis() + START_TIMEOUT_MILLIS;
+        String problem = "the server's address (" + file + ") was not written";
+        while (System.currentTimeMillis() < deadline) {
+            if (Files.isRegularFile(file)) {
+                String content = Files.readString(file, StandardCharsets.UTF_8).strip();
+                if (content.startsWith("error:")) {
+                    err.println("dukehoff-mcp: " + content.substring("error:".length()).strip());
+                    return 1;
+                }
+                if (!content.isEmpty()) {
+                    Optional<Connection> c = tryConnectSocket(Paths.get(content));
+                    if (c.isPresent()) {
+                        return relay(c.get(), tools, workspace, System.in, new FileOutputStream(FileDescriptor.out));
+                    }
+                    problem = "no server answers on " + content;
+                }
+            }
+            Thread.sleep(500);
+        }
+        err.println("dukehoff-mcp: " + problem + " within " + START_TIMEOUT_MILLIS / 1000 + " s (is the Apache NetBeans extension running?)");
+        return 1;
     }
 
     Connection connect(Path base, String version, Function<Path, List<String>> start) throws IOException, InterruptedException {
@@ -160,7 +202,11 @@ final class Proxy {
 
     /** The daemon of a slot, if one answers. */
     static Optional<Connection> tryConnect(Path dir) {
-        Path socket = socket(dir);
+        return tryConnectSocket(socket(dir));
+    }
+
+    /** The daemon listening on a socket, if one answers. */
+    static Optional<Connection> tryConnectSocket(Path socket) {
         if (!Files.exists(socket)) {
             return Optional.empty();
         }
@@ -209,11 +255,12 @@ final class Proxy {
      * Relays stdin to the daemon and the daemon's answers to stdout. Ends when the daemon closes the
      * connection: after the client closed stdin (status 0) or because it stopped (status 1).
      */
-    int relay(Connection c, String tools, InputStream in, OutputStream out) throws IOException, InterruptedException {
+    int relay(Connection c, String tools, String workspace, InputStream in, OutputStream out) throws IOException, InterruptedException {
         SocketChannel channel = c.channel();
-        // the registration's tool selection; the daemon answers connected, or error for unknown names
-        write(channel, tools == null ? "{\"dukehoffmcp\":\"connect\"}\n"
-                : "{\"dukehoffmcp\":\"connect\",\"tools\":\"" + tools.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}\n");
+        // the registration's tool selection and, for a server of several workspaces, the folder; the
+        // daemon answers connected, or error for unknown names or an unusable folder
+        write(channel, "{\"dukehoffmcp\":\"connect\"" + (tools == null ? "" : ",\"tools\":\"" + json(tools) + "\"")
+                + (workspace == null ? "" : ",\"workspace\":\"" + json(workspace) + "\"") + "}\n");
         String answer = readLine(channel);
         if (answer == null || !answer.contains("\"dukehoffmcp\":\"connected\"")) {
             Matcher m = MESSAGE.matcher(answer == null ? "" : answer);
@@ -297,6 +344,11 @@ final class Proxy {
             }
         }
         throw new IOException("no dukehoff-mcp module (modules/com-dukehoff-mcp.jar) in " + home);
+    }
+
+    /** Text as the content of a JSON string. */
+    private static String json(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /** A JSON string's content without its escapes (the daemon's json_simple also escapes '/'). */

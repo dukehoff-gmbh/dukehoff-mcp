@@ -22,11 +22,15 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONValue;
+import org.openide.util.Lookup;
+import org.openide.util.lookup.Lookups;
 
 /**
  * The persistent server: listens on a Unix domain socket and runs one MCP session per connection,
@@ -46,18 +50,49 @@ final class Daemon {
     private static final long CHECK_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
     private final Path socket;
+    /** The workspace whose removal ends the daemon; null when embedded. */
     private final File workspaceRoot;
-    private final List<Tool> tools;
+    /** The tools for the workspace a connection names (null: none named). */
+    private final Function<String, List<Tool>> toolsFor;
     private final String version;
+    /** Inside a NetBeans we do not own: never stops by itself (no idle exit). */
+    private final boolean embedded;
+    /**
+     * The lookup to serve connections in, or null for the default one. Inside the VS Code extension's
+     * NetBeans, open projects belong to the LSP client's context: tools see projects (and the
+     * refactoring engine finds usages) only when they run in it.
+     */
+    private volatile Lookup context;
     private final AtomicInteger clients = new AtomicInteger();
+    private final CountDownLatch listening = new CountDownLatch(1);
     private volatile long idleSince = System.currentTimeMillis();
     private volatile ServerSocketChannel server;
 
+    /** The persistent server of one workspace (our runtime). */
     Daemon(Path socket, File workspaceRoot, List<Tool> tools, String version) {
+        this(socket, workspaceRoot, workspace -> tools, version, false);
+    }
+
+    /**
+     * @param toolsFor the tools for the workspace folder a connection names in its handshake
+     *        ({@code "workspace"}); throws {@link IllegalArgumentException} for an unusable one
+     */
+    Daemon(Path socket, File workspaceRoot, Function<String, List<Tool>> toolsFor, String version, boolean embedded) {
         this.socket = socket;
         this.workspaceRoot = workspaceRoot;
-        this.tools = tools;
+        this.toolsFor = toolsFor;
         this.version = version;
+        this.embedded = embedded;
+    }
+
+    /** Serves the following connections in this lookup (see {@link #context}). */
+    void setContext(Lookup context) {
+        this.context = context;
+    }
+
+    /** Waits until the socket accepts connections. */
+    boolean awaitListening(long seconds) throws InterruptedException {
+        return listening.await(seconds, TimeUnit.SECONDS);
     }
 
     /** Serves clients until stopped, idle for too long, or the workspace is gone. */
@@ -74,8 +109,9 @@ final class Daemon {
             Thread watchdog = new Thread(this::watch, "dukehoff-mcp daemon watchdog");
             watchdog.setDaemon(true);
             watchdog.start();
-            LOG.log(Level.INFO, "dukehoff-mcp daemon {0} listening on {1}, idle exit after {2} min",
-                    new Object[]{version, socket, IDLE_MINUTES});
+            LOG.log(Level.INFO, "dukehoff-mcp daemon {0} listening on {1}, {2}", new Object[]{version, socket,
+                embedded ? "embedded" : "idle exit after " + IDLE_MINUTES + " min"});
+            listening.countDown();
             while (true) {
                 SocketChannel client;
                 try {
@@ -83,7 +119,9 @@ final class Daemon {
                 } catch (ClosedChannelException ex) {
                     return; // stop() closed it
                 }
-                Thread t = new Thread(() -> serve(client), "dukehoff-mcp client");
+                Lookup c = context;
+                Thread t = new Thread(c == null ? () -> serve(client) : () -> Lookups.executeWith(c, () -> serve(client)),
+                        "dukehoff-mcp client");
                 t.setDaemon(true);
                 t.start();
             }
@@ -111,9 +149,9 @@ final class Daemon {
             } catch (InterruptedException ex) {
                 return;
             }
-            if (!workspaceRoot.isDirectory()) {
+            if (workspaceRoot != null && !workspaceRoot.isDirectory()) {
                 stop("the workspace " + workspaceRoot + " is gone");
-            } else if (clients.get() == 0
+            } else if (!embedded && clients.get() == 0
                     && System.currentTimeMillis() - idleSince > TimeUnit.MINUTES.toMillis(IDLE_MINUTES)) {
                 stop("no client for " + IDLE_MINUTES + " minutes");
             }
@@ -144,6 +182,7 @@ final class Daemon {
             // each registration (and so each connection) may offer other tools; one index serves all
             List<Tool> selected;
             try {
+                List<Tool> tools = toolsFor.apply(message.get("workspace") instanceof String w ? w : null);
                 selected = ToolSelection.select(tools, message.get("tools") instanceof String s ? s : null);
             } catch (IllegalArgumentException ex) {
                 out.write((JSONValue.toJSONString(Map.of("dukehoffmcp", "error", "message", ex.getMessage())) + "\n")
