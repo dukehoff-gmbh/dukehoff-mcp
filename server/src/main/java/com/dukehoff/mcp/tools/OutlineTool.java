@@ -4,6 +4,7 @@
  */
 package com.dukehoff.mcp.tools;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,8 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Parameterizable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
@@ -59,13 +62,15 @@ public final class OutlineTool implements Tool {
                 + "listed with its canonical symbol (e.g. com.acme.Foo#bar(java.lang.String))"
                 + (users.isEmpty() ? " for use with the other tools" : " for use with " + String.join(" and ", users))
                 + ". Cheaper than reading the file when you only need the "
-                + "API or want to know which lines to read. Give either 'symbol' (fully qualified type, "
-                + "e.g. com.acme.Foo or com.acme.Foo.Inner) or 'file' (path relative to the workspace).";
+                + "API or want to know which lines to read. Also for types of the JDK and of the project's "
+                + "dependencies (java.util.Map, org.apache.commons.lang3.StringUtils): their public API with exact "
+                + "overloads, generics and deprecations, read from the class files, so you need not guess. Give either "
+                + "'symbol' (a type, e.g. com.acme.Foo or com.acme.Foo.Inner) or 'file' (path relative to the workspace).";
     }
 
     @Override
     public List<String> searchTerms() {
-        return List.of("class structure", "members", "list methods", "type API", "file structure");
+        return List.of("class structure", "members", "list methods", "type API", "file structure", "library API", "dependency API");
     }
 
     @Override
@@ -112,11 +117,17 @@ public final class OutlineTool implements Tool {
             file = SymbolResolver.findSourceFile(typeName, roots);
             if (file == null) {
                 // a simple or partly qualified name, as in the other tools
+                String qualified;
                 try {
-                    typeName = SymbolResolver.qualify(typeName, roots);
+                    qualified = SymbolResolver.qualifyInSources(typeName, roots);
+                    if (qualified == null) {
+                        // not in the workspace sources: a type of the JDK or of a dependency
+                        return libraryOutline(LibraryTypes.resolve(typeName, roots), limit);
+                    }
                 } catch (SymbolResolver.ResolutionException ex) {
                     return Result.error(ex.getMessage());
                 }
+                typeName = qualified;
                 file = SymbolResolver.findSourceFile(typeName, roots);
                 if (file == null) {
                     return Result.error("Cannot find the source of " + typeName);
@@ -148,11 +159,29 @@ public final class OutlineTool implements Tool {
             } else {
                 types.addAll(cc.getTopLevelElements());
             }
-            Printer p = new Printer(cc, limit);
+            Printer p = new Printer(cc, limit, false);
             p.sb.append(workspace.displayPath(source)).append('\n');
             for (TypeElement t : types) {
                 p.type(t);
             }
+            result.set(Result.ok(p.finish()));
+        }, true);
+        return result.get();
+    }
+
+    /** The public API of a library type, read from its class file. */
+    private static Result libraryOutline(LibraryTypes.Found found, int limit) throws IOException {
+        AtomicReference<Result> result = new AtomicReference<>();
+        JavaSource.create(found.cpInfo()).runUserActionTask(cc -> {
+            TypeElement type = found.handle().resolve(cc);
+            if (type == null) {
+                result.set(Result.error("Cannot read " + found.fqn() + " from " + found.origin()));
+                return;
+            }
+            Printer p = new Printer(cc, limit, true);
+            p.sb.append(found.fqn()).append("  [library: ").append(found.origin())
+                    .append("; public and protected members, no source lines]\n");
+            p.type(type);
             result.set(Result.ok(p.finish()));
         }, true);
         return result.get();
@@ -166,26 +195,41 @@ public final class OutlineTool implements Tool {
 
         private final CompilationController cc;
         private final int limit;
+        /** A type read from a class file: its API only, no source lines. */
+        private final boolean library;
         private final StringBuilder sb = new StringBuilder();
         private int members;
         private int omitted;
+        private int hidden;
 
-        Printer(CompilationController cc, int limit) {
+        Printer(CompilationController cc, int limit, boolean library) {
             this.cc = cc;
             this.limit = limit;
+            this.library = library;
         }
 
         void type(TypeElement type) {
-            sb.append('\n').append(kind(type)).append(' ').append(type.getQualifiedName());
+            sb.append('\n').append(kind(type)).append(' ').append(type.getQualifiedName()).append(typeParameters(type));
             String supers = supertypes(type);
             if (!supers.isEmpty()) {
                 sb.append(supers);
             }
-            int line = line(type);
-            // a type an annotation processor generated (Lombok's builder) has no source line
-            sb.append(line > 0 ? "  (line " + line + ")\n" : "  (generated)\n");
+            if (cc.getElements().isDeprecated(type)) {
+                sb.append("  (deprecated)");
+            }
+            if (library) {
+                sb.append('\n');
+            } else {
+                int line = line(type);
+                // a type an annotation processor generated (Lombok's builder) has no source line
+                sb.append(line > 0 ? "  (line " + line + ")\n" : "  (generated)\n");
+            }
             List<TypeElement> nested = new ArrayList<>();
             for (Element e : type.getEnclosedElements()) {
+                if (library && !api(e)) {
+                    hidden++;
+                    continue;
+                }
                 if (e instanceof TypeElement te) {
                     nested.add(te);
                 }
@@ -196,9 +240,30 @@ public final class OutlineTool implements Tool {
             }
         }
 
+        /** {@code <K, V extends Comparable<V>>}, or empty. */
+        private static String typeParameters(Parameterizable element) {
+            if (element.getTypeParameters().isEmpty()) {
+                return "";
+            }
+            return element.getTypeParameters().stream().map(p -> {
+                String bounds = p.getBounds().stream().map(b -> simpleTypes(b.toString()))
+                        .filter(b -> !b.equals("Object")).collect(Collectors.joining(" & "));
+                return p.getSimpleName() + (bounds.isEmpty() ? "" : " extends " + bounds);
+            }).collect(Collectors.joining(", ", "<", ">"));
+        }
+
+        /** Part of a library type's API: public or protected. */
+        private static boolean api(Element e) {
+            return e.getModifiers().contains(Modifier.PUBLIC) || e.getModifiers().contains(Modifier.PROTECTED);
+        }
+
         private void member(Element e) {
             if (members++ >= limit) {
                 omitted++;
+                return;
+            }
+            if (library) {
+                libraryMember(e);
                 return;
             }
             boolean implicit = cc.getElements().getOrigin(e) != Elements.Origin.EXPLICIT;
@@ -214,13 +279,37 @@ public final class OutlineTool implements Tool {
             if (!mods.isEmpty()) {
                 sb.append(mods).append(' ');
             }
+            declaration(e);
+            if (implicit) {
+                sb.append("  (implicit)");
+            } else if (generated) {
+                sb.append("  (generated)");
+            }
+            sb.append('\n');
+        }
+
+        /** A member of a library type: no line, as it has no source. */
+        private void libraryMember(Element e) {
+            sb.append("  ");
+            String mods = e.getModifiers().stream().map(m -> m.toString()).collect(Collectors.joining(" "));
+            if (!mods.isEmpty()) {
+                sb.append(mods).append(' ');
+            }
+            declaration(e);
+            sb.append('\n');
+        }
+
+        /** Kind, canonical signature, type, thrown exceptions and a deprecation mark. */
+        private void declaration(Element e) {
             sb.append(kind(e)).append(' ').append(SymbolResolver.signature(e, cc));
             switch (e.getKind()) {
                 case FIELD, ENUM_CONSTANT, RECORD_COMPONENT ->
                     sb.append(" : ").append(simpleTypes(e.asType().toString()));
                 case METHOD -> {
                     ExecutableElement ee = (ExecutableElement) e;
-                    sb.append(" : ").append(simpleTypes(ee.getReturnType().toString()));
+                    String typeParameters = typeParameters(ee);
+                    sb.append(" : ").append(typeParameters.isEmpty() ? "" : typeParameters + " ")
+                            .append(simpleTypes(ee.getReturnType().toString()));
                     if (!ee.getThrownTypes().isEmpty()) {
                         sb.append(" throws ").append(ee.getThrownTypes().stream()
                                 .map(t -> simpleTypes(t.toString())).collect(Collectors.joining(", ")));
@@ -229,12 +318,9 @@ public final class OutlineTool implements Tool {
                 default -> {
                 }
             }
-            if (implicit) {
-                sb.append("  (implicit)");
-            } else if (generated) {
-                sb.append("  (generated)");
+            if (cc.getElements().isDeprecated(e)) {
+                sb.append("  (deprecated)");
             }
-            sb.append('\n');
         }
 
         private String supertypes(TypeElement type) {
@@ -267,6 +353,9 @@ public final class OutlineTool implements Tool {
         String finish() {
             if (omitted > 0) {
                 sb.append("\n... ").append(omitted).append(" more members not shown, raise 'limit' to see them\n");
+            }
+            if (hidden > 0) {
+                sb.append("(").append(hidden).append(" package-private and private members not shown)\n");
             }
             return sb.toString();
         }

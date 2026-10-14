@@ -469,6 +469,31 @@ expect 'public method com.acme.shop.CardPayment#pay(com.acme.shop.Order) : boole
 tool outline '{"symbol":"com.acme.shop.Order#total"}'
 expect '"isError":true'
 
+# library types: the JDK and the dependencies, read from the class files
+tool outline '{"symbol":"java.util.ArrayList"}'
+expect '"isError":false'
+expect 'java.util.ArrayList  [library: java.base (JDK)'
+expect 'class java.util.ArrayList<E> extends AbstractList<E>'
+expect 'public method java.util.ArrayList#add(java.lang.Object) : boolean'
+expect_not 'private method'
+expect_not 'private field'
+expect 'package-private and private members not shown'
+tool outline '{"symbol":"Assertions","limit":400}'
+expect 'org.junit.jupiter.api.Assertions  [library: junit-jupiter-api-5.10.2.jar'
+expect 'public static method org.junit.jupiter.api.Assertions#fail() : <V> V'
+tool outline '{"symbol":"List"}'
+expect '"isError":true'
+expect 'ambiguous'
+expect 'java.util.List'
+expect_not 'com.sun.tools.javac.util.List'
+
+tool find_symbol '{"query":"Assertions"}'
+expect 'include_libraries'
+tool find_symbol '{"query":"Assertions#assertThrows","include_libraries":true}'
+expect 'org.junit.jupiter.api.Assertions#assertThrows(java.lang.Class,org.junit.jupiter.api.function.Executable)  method  [library: junit-jupiter-api-5.10.2.jar]'
+tool find_symbol '{"query":"util.Date#getYear","include_libraries":true}'
+expect 'java.util.Date#getYear()  method  [library: java.base (JDK)]  (deprecated)'
+
 tool diagnostics '{}'
 expect 'No compile errors in the workspace'
 

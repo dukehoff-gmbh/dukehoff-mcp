@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import org.netbeans.api.java.source.ClassIndex;
@@ -53,7 +54,9 @@ public final class FindSymbolTool implements Tool {
                 + "location. The query is a case-insensitive prefix of the simple type name (\"OrderServ\"), "
                 + "a glob (\"*Service\", \"Order*Impl\") or a partially qualified name (\"billing.Invoice\"). "
                 + "Add '#member' to search members of the matching types: \"OrderService#save\" (prefix), "
-                + "\"*Repository#find*\" (glob), \"Order#<init>\" (constructors).";
+                + "\"*Repository#find*\" (glob), \"Order#<init>\" (constructors). With include_libraries also the "
+                + "JDK and the project's dependencies (their public API): look up a library method's exact name "
+                + "and overloads instead of guessing, e.g. \"commons.lang3.StringUtils#abbrev\".";
     }
 
     @Override
@@ -68,12 +71,18 @@ public final class FindSymbolTool implements Tool {
                 "properties", Json.obj(
                         "query", Json.obj("type", "string",
                                 "description", "Type name, prefix or glob, optionally followed by #member"),
+                        "include_libraries", Json.obj("type", "boolean",
+                                "description", "Also search the JDK and the dependencies on the class path, default false"),
                         "limit", Json.obj("type", "integer", "description", "Maximum results, default " + DEFAULT_LIMIT)),
                 "required", List.of("query"));
     }
 
-    /** A type found in the index. */
-    private record TypeHit(String kind, FileObject file) {
+    /** A type found in the index: in the workspace sources (file), or a library type (library). */
+    private record TypeHit(String kind, FileObject file, LibraryTypes.Found library) {
+
+        String location(Workspace workspace) {
+            return library != null ? "[library: " + library.origin() + "]" : file != null ? workspace.displayPath(file) : "?";
+        }
     }
 
     @Override
@@ -96,16 +105,17 @@ public final class FindSymbolTool implements Tool {
             return Result.error("Use 'Type' or 'Type#member', e.g. OrderService#save");
         }
 
-        Map<String, TypeHit> types = findTypes(typeQuery, roots);
+        boolean libraries = Boolean.TRUE.equals(arguments.get("include_libraries"));
+        Map<String, TypeHit> types = findTypes(typeQuery, roots, libraries);
         if (types.isEmpty()) {
-            return Result.ok("No types matching '" + typeQuery + "' in the workspace sources.");
+            return Result.ok("No types matching '" + typeQuery + "' in the workspace sources"
+                    + (libraries ? " or on their class paths." : " (add include_libraries: true to search the JDK and the dependencies)."));
         }
         // canonical symbol -> "kind  location"
         Map<String, String> found = new TreeMap<>();
         String note = "";
         if (memberQuery == null) {
-            types.forEach((fqn, hit) -> found.put(fqn,
-                    hit.kind() + "  " + (hit.file() != null ? workspace.displayPath(hit.file()) : "?")));
+            types.forEach((fqn, hit) -> found.put(fqn, hit.kind() + "  " + hit.location(workspace)));
         } else {
             if (types.size() > MAX_TYPES_FOR_MEMBERS) {
                 note = "(members of the first " + MAX_TYPES_FOR_MEMBERS + " of " + types.size()
@@ -129,7 +139,7 @@ public final class FindSymbolTool implements Tool {
         return Result.ok(sb.toString());
     }
 
-    private Map<String, TypeHit> findTypes(String query, List<FileObject> roots) {
+    private Map<String, TypeHit> findTypes(String query, List<FileObject> roots, boolean libraries) {
         String simple = query.substring(query.lastIndexOf('.') + 1);
         String qualifierFilter = query.contains(".") ? query.substring(0, query.lastIndexOf('.')).toLowerCase(Locale.ROOT) : null;
         boolean glob = simple.contains("*") || simple.contains("?");
@@ -137,6 +147,11 @@ public final class FindSymbolTool implements Tool {
         String pattern = glob ? globToRegex(simple) : simple;
 
         Map<String, TypeHit> found = new TreeMap<>();
+        if (libraries) {
+            LibraryTypes.find(pattern, kind, roots,
+                    fqn -> qualifierFilter == null || fqn.toLowerCase(Locale.ROOT).contains(qualifierFilter))
+                    .forEach((fqn, lib) -> found.put(fqn, new TypeHit(lib.kind(), null, lib)));
+        }
         for (FileObject root : roots) {
             ClasspathInfo cpInfo = ClasspathInfo.create(root);
             Set<ElementHandle<TypeElement>> types = cpInfo.getClassIndex()
@@ -150,7 +165,7 @@ public final class FindSymbolTool implements Tool {
                     continue;
                 }
                 found.computeIfAbsent(fqn, k -> new TypeHit(h.getKind().name().toLowerCase(Locale.ROOT),
-                        SourceUtils.getFile(h, cpInfo)));
+                        SourceUtils.getFile(h, cpInfo), null));
             }
         }
         return found;
@@ -163,9 +178,30 @@ public final class FindSymbolTool implements Tool {
                 : Pattern.compile(Pattern.quote(memberQuery) + ".*", Pattern.CASE_INSENSITIVE);
         // parse each file once for all of its matching types
         Map<FileObject, List<String>> byFile = new LinkedHashMap<>();
-        types.entrySet().stream().limit(MAX_TYPES_FOR_MEMBERS)
-                .filter(e -> e.getValue().file() != null)
-                .forEach(e -> byFile.computeIfAbsent(e.getValue().file(), f -> new ArrayList<>()).add(e.getKey()));
+        List<LibraryTypes.Found> library = new ArrayList<>();
+        types.entrySet().stream().limit(MAX_TYPES_FOR_MEMBERS).forEach(e -> {
+            if (e.getValue().library() != null) {
+                library.add(e.getValue().library());
+            } else if (e.getValue().file() != null) {
+                byFile.computeIfAbsent(e.getValue().file(), f -> new ArrayList<>()).add(e.getKey());
+            }
+        });
+        for (LibraryTypes.Found lib : library) {
+            // a library type's API only, read from its class file
+            JavaSource.create(lib.cpInfo()).runUserActionTask(cc -> {
+                TypeElement type = lib.handle().resolve(cc);
+                if (type == null) {
+                    return;
+                }
+                for (Element e : type.getEnclosedElements()) {
+                    boolean api = e.getModifiers().contains(Modifier.PUBLIC) || e.getModifiers().contains(Modifier.PROTECTED);
+                    if (api && memberMatches(e, constructors, pattern)) {
+                        into.put(SymbolResolver.signature(e, cc), e.getKind().name().toLowerCase(Locale.ROOT).replace('_', ' ')
+                                + "  [library: " + lib.origin() + "]" + (cc.getElements().isDeprecated(e) ? "  (deprecated)" : ""));
+                    }
+                }
+            }, true);
+        }
         for (Map.Entry<FileObject, List<String>> f : byFile.entrySet()) {
             JavaSource js = JavaSource.forFileObject(f.getKey());
             if (js == null) {
@@ -180,13 +216,7 @@ public final class FindSymbolTool implements Tool {
                         continue;
                     }
                     for (Element e : type.getEnclosedElements()) {
-                        boolean matches = switch (e.getKind()) {
-                            case CONSTRUCTOR -> constructors;
-                            case METHOD, FIELD, ENUM_CONSTANT, RECORD_COMPONENT ->
-                                !constructors && pattern.matcher(e.getSimpleName()).matches();
-                            default -> false;
-                        };
-                        if (matches) {
+                        if (memberMatches(e, constructors, pattern)) {
                             boolean implicit = cc.getElements().getOrigin(e) != Elements.Origin.EXPLICIT;
                             int line = implicit ? 0 : SymbolResolver.line(cc, e);
                             into.put(SymbolResolver.signature(e, cc), e.getKind().name().toLowerCase(Locale.ROOT)
@@ -197,6 +227,14 @@ public final class FindSymbolTool implements Tool {
                 }
             }, true);
         }
+    }
+
+    private static boolean memberMatches(Element e, boolean constructors, Pattern pattern) {
+        return switch (e.getKind()) {
+            case CONSTRUCTOR -> constructors;
+            case METHOD, FIELD, ENUM_CONSTANT, RECORD_COMPONENT -> !constructors && pattern.matcher(e.getSimpleName()).matches();
+            default -> false;
+        };
     }
 
     static String globToRegex(String glob) {
