@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # the Apache NetBeans extension the embedded test runs in: its NetBeans is the release in pom.xml
+  NETBEANS_VSIX_VERSION: 31.0.1
+
 jobs:
   build:
     strategy:
@@ -30,7 +34,7 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # module, launcher, runtime, unit tests; validate checks the license headers
+      # module, launcher, runtime, VS Code extension, unit tests; validate checks the license headers
       - name: Build
         run: mvn -B -ntp clean package
 
@@ -48,6 +52,32 @@ jobs:
         env:
           JDK_HOME: ${{ env.JAVA_HOME }}
 
+      # the VS Code extension's path: our module inside the Apache NetBeans extension's NetBeans
+      - name: Apache NetBeans extension (cached)
+        if: runner.os == 'Linux'
+        id: netbeans-vsix
+        uses: actions/cache@v4
+        with:
+          path: ~/apache-netbeans-java
+          key: apache-netbeans-java-${{ env.NETBEANS_VSIX_VERSION }}
+
+      - name: Download the Apache NetBeans extension
+        if: runner.os == 'Linux' && steps.netbeans-vsix.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/apache-netbeans-java
+          curl -sSfL --compressed -o ~/apache-netbeans-java/ext.vsix \
+            "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ASF/vsextensions/apache-netbeans-java/${NETBEANS_VSIX_VERSION}/vspackage"
+          unzip -q ~/apache-netbeans-java/ext.vsix 'extension/*' -d ~/apache-netbeans-java
+          rm ~/apache-netbeans-java/ext.vsix
+
+      - name: Embedded test (VS Code extension, without VS Code)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x ~/apache-netbeans-java/extension/nbcode/bin/nbcode ~/apache-netbeans-java/extension/nbcode/platform/lib/nbexec
+          python3 tests/smoke/embedded.py ~/apache-netbeans-java/extension runtime/target/dukehoffmcp/extra launcher/target/dukehoff-mcp.jar
+        env:
+          JDK_HOME: ${{ env.JAVA_HOME }}
+
       - name: Keep the distribution
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
@@ -56,4 +86,5 @@ jobs:
           path: |
             runtime/target/dukehoff-mcp-*.tar.gz
             runtime/target/dukehoff-mcp-*.zip
+            vscode/target/dukehoff-mcp-java-*.vsix
           retention-days: 7

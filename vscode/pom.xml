@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2026 Dukehoff GmbH
+    SPDX-License-Identifier: Apache-2.0
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.dukehoff.mcp</groupId>
+        <artifactId>dukehoff-mcp-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>dukehoff-mcp-vscode</artifactId>
+    <packaging>pom</packaging>
+    <name>dukehoff-mcp VS Code extension</name>
+    <description>The VS Code extension: our module as a cluster for the Apache NetBeans extension, the proxy, and
+        the TypeScript part that registers the MCP server. Out: target/dukehoff-mcp-java-(package.json version).vsix</description>
+
+    <properties>
+        <node.version>v22.21.1</node.version>
+        <cluster>${project.basedir}/../runtime/target/dukehoffmcp/extra</cluster>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- the launcher (the proxy) to bin/, our module as the cluster nbcode/dukehoffmcp (the Apache
+                     NetBeans extension loads every cluster in other extensions' nbcode/), the license files;
+                     built by the modules before this one -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>collect</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.basedir}/bin"/>
+                                <delete dir="${project.basedir}/nbcode"/>
+                                <copy file="${project.basedir}/../launcher/target/dukehoff-mcp.jar" todir="${project.basedir}/bin"/>
+                                <copy todir="${project.basedir}/nbcode/dukehoffmcp">
+                                    <fileset dir="${cluster}">
+                                        <include name="config/Modules/com-dukehoff-mcp.xml"/>
+                                        <include name="modules/com-dukehoff-mcp.jar"/>
+                                        <include name="modules/ext/dukehoff-mcp/**"/>
+                                        <include name="update_tracking/com-dukehoff-mcp.xml"/>
+                                    </fileset>
+                                </copy>
+                                <copy file="${project.basedir}/../runtime/src/main/licenses/licenses/MIT-lombok"
+                                      tofile="${project.basedir}/nbcode/dukehoffmcp/modules/ext/dukehoff-mcp/LICENSE-lombok"/>
+                                <copy file="${project.basedir}/../LICENSE" todir="${project.basedir}"/>
+                                <copy file="${project.basedir}/../NOTICE" todir="${project.basedir}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Node.js is downloaded (cached in the local Maven repository), so the build needs none installed -->
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>2.0.2</version>
+                <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <installDirectory>${project.build.directory}</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>npm-ci</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci --no-audit --no-fund</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run compile</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>vsix</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run package</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

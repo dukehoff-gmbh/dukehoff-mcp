@@ -42,10 +42,11 @@ jobs:
           echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' || { echo "not a version: $version"; exit 1; }
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      # the version in the poms comes from the tag; nothing is committed
+      # the version in the poms and the extension's package.json comes from the tag; nothing is committed
       - name: Build
         run: |
           mvn -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false -DprocessAllModules=true
+          (cd vscode && npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version)
           mvn -B -ntp clean package
 
       - name: Smoke test
@@ -55,7 +56,10 @@ jobs:
 
       - name: Checksums
         working-directory: runtime/target
-        run: sha256sum dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz dukehoff-mcp-${{ steps.version.outputs.version }}.zip > SHA256SUMS
+        run: |
+          cp ../../vscode/target/dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix .
+          sha256sum dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz dukehoff-mcp-${{ steps.version.outputs.version }}.zip \
+              dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix > SHA256SUMS
 
       - name: Publish the release
         if: github.ref_type == 'tag'
@@ -68,12 +72,14 @@ jobs:
           Dukehoff MCP for Java ${VERSION}: unpack the archive (\`.tar.gz\` for macOS and Linux, \`.zip\`
           for Windows), then register it with your agent as described in the
           [README](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/README.md#installation).
-          Needs a JDK 17 or newer. \`SHA256SUMS\` has the checksums of both archives.
+          Needs a JDK 17 or newer. For VS Code: install \`dukehoff-mcp-java-${VERSION}.vsix\`
+          (Extensions > ... > Install from VSIX), which brings the Apache NetBeans extension along; the tools
+          appear in Copilot's agent mode as the server Java. \`SHA256SUMS\` has the checksums of all three.
           EOF
           prerelease=; case "$VERSION" in *-*) prerelease=--prerelease ;; esac
           gh release create "${GITHUB_REF_NAME}" --title "Dukehoff MCP for Java ${VERSION}" \
               --notes-file notes.md --generate-notes $prerelease \
-              "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" SHA256SUMS
+              "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" "dukehoff-mcp-java-${VERSION}.vsix" SHA256SUMS
 
       - name: Keep the archives (dry run)
         if: github.ref_type != 'tag'
@@ -83,5 +89,6 @@ jobs:
           path: |
             runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz
             runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.zip
+            runtime/target/dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix
             runtime/target/SHA256SUMS
           retention-days: 7
