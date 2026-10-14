@@ -15,10 +15,10 @@ directory, is `dukehoff-mcp`; agents see its tools under the server name `java`.
 
 | Tool | What it does |
 |---|---|
-| `find_symbol` | Types declared in the workspace by prefix, glob or partially qualified name |
+| `find_symbol` | Types declared in the workspace by prefix, glob or partially qualified name, or members of them; with `include_libraries` also the JDK and the dependencies |
 | `find_usages` | Semantic references to a type, method, constructor or field (`WhereUsedQuery`) |
 | `find_implementations` | Subtypes of a type (all or direct) or overriding methods of a method; for a method also what it overrides or implements upwards, library declarations included |
-| `outline` | Members of a type or file: modifiers, canonical signatures, declared types, line numbers |
+| `outline` | Members of a type or file: modifiers, canonical signatures, declared types, line numbers; for types of the JDK and the dependencies their public API (overloads, generics, deprecations) from the class files |
 | `diagnostics` | Compile errors (optionally warnings) of given files or the whole workspace, without a build |
 | `rename` | Renames a type, method or field with the refactoring engine; writes to disk, returns a unified diff |
 | `move` | Moves a top-level class to another package, updating package declaration, imports and references |

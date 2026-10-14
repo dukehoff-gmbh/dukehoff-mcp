@@ -89,7 +89,9 @@ public class ToolSelectionTest {
                 + "left out when the type name is unique in the workspace (Foo#bar). "
                 + "Which tool: who calls a method, or where a type, field or constructor is used -> "
                 + "find_usages (grep cannot tell which class a call belongs to and misses static "
-                + "imports); subclasses and implementations -> find_implementations; renaming, moving, "
+                + "imports); subclasses and implementations -> find_implementations; the exact API of a class "
+                + "of the JDK or a dependency (its methods, overloads, deprecations) before calling it -> outline or "
+                + "find_symbol with include_libraries (instead of guessing; grep cannot look into jars); renaming, moving, "
                 + "changing a signature -> the refactoring tools (one call updates every reference). "
                 + "Use find_symbol when you only know a simple or partial type name. "
                 + "Clients show these tools with the server name in front (java-find_usages, "
@@ -109,6 +111,7 @@ public class ToolSelectionTest {
         String text = McpServer.instructions(core);
         assertTrue(text, text.contains("-> find_usages"));
         assertTrue(text, text.contains("renaming -> the refactoring tools"));
+        assertTrue(text, text.contains("before calling it -> outline (instead of guessing"));
         assertFalse(text, text.contains("find_implementations"));
         assertFalse(text, text.contains("find_symbol"));
 
