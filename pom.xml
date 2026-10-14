@@ -152,6 +152,7 @@
                                 <exclude>vscode/LICENSE</exclude>
                                 <exclude>vscode/NOTICE</exclude>
                                 <exclude>**/.vscodeignore</exclude>
+                                <exclude>**/*.png</exclude>
                                 <!-- internal working notes, not part of the published repository -->
                                 <exclude>CLAUDE.md</exclude>
                                 <!-- third-party license texts and the generated inventory -->
