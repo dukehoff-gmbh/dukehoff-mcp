@@ -22,7 +22,7 @@ request.
 You need a JDK 17 or newer and Maven.
 
 ```sh
-mvn clean package                                       # the NetBeans module, the runtime, unit tests
+mvn clean package                                       # the NetBeans module, the runtime, the VS Code extension, unit tests
 tests/smoke/smoke.sh runtime/target/dukehoffmcp/bin/dukehoff-mcp    # every tool end to end; exit 0 = pass
 python tests/smoke/smoke.py runtime/target/dukehoffmcp/bin/dukehoff-mcp.jar   # the same on any OS (Windows)
 ```
@@ -31,6 +31,15 @@ The runtime is a headless Apache NetBeans built from the NetBeans clusters on Ma
 first build downloads them. Further end-to-end tests are in `tests/smoke/` (Lombok, project types,
 two clients on one workspace, tool groups). `runtime/target/dukehoffmcp/bin/dukehoff-mcp --stop <workspace>`
 ends a persistent server a test left running.
+
+The VS Code extension (`vscode/`, out: `vscode/target/dukehoff-mcp-java-<version>.vsix`) is built with
+npm; the build downloads Node.js itself. It runs our module inside the NetBeans of the Apache NetBeans
+extension; `tests/smoke/embedded.py` checks that without VS Code, against the unpacked Apache NetBeans
+VSIX (the version CI uses is `NETBEANS_VSIX_VERSION` in `.github/workflows/ci.yml`):
+
+```sh
+python3 tests/smoke/embedded.py <unpacked VSIX>/extension runtime/target/dukehoffmcp/extra launcher/target/dukehoff-mcp.jar
+```
 
 The evaluation in `eval/` runs real coding-agent sessions (Claude Code) on your own login, so every
 run costs tokens; it is not needed for most changes.
