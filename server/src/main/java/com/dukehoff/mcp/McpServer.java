@@ -72,6 +72,11 @@ public final class McpServer {
         if (offered.contains("find_implementations")) {
             which.add("subclasses and implementations -> find_implementations");
         }
+        if (offered.contains("outline")) {
+            which.add("the exact API of a class of the JDK or a dependency (its methods, overloads, deprecations) before "
+                    + "calling it -> outline" + (offered.contains("find_symbol") ? " or find_symbol with include_libraries" : "")
+                    + " (instead of guessing; grep cannot look into jars)");
+        }
         List<String> refactorings = new ArrayList<>();
         for (String[] r : new String[][]{{"rename", "renaming"}, {"move", "moving"}, {"change_signature", "changing a signature"},
             {"safe_delete", "deleting"}, {"inline", "inlining"}}) {

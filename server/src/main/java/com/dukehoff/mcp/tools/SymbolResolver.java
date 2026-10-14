@@ -145,6 +145,24 @@ final class SymbolResolver {
      * The qualified name of the one workspace type whose name is or ends with {@code typeName}.
      */
     static String qualify(String typeName, List<FileObject> sourceRoots) throws ResolutionException {
+        String qualified = qualifyInSources(typeName, sourceRoots);
+        if (qualified == null) {
+            String simple = typeName.substring(typeName.lastIndexOf('.') + 1);
+            throw new ResolutionException("No type " + typeName + " in the workspace sources (only outline and "
+                    + "find_symbol cover library types). " + (Offered.has("find_symbol")
+                    ? "Use find_symbol with a prefix or glob, e.g. \"" + simple.substring(0, Math.min(4, simple.length())) + "*\", to look it up."
+                    : "Check the name, e.g. by searching the sources for the class declaration."));
+        }
+        return qualified;
+    }
+
+    /**
+     * The qualified name of the one workspace type whose name is or ends with {@code typeName}, or null
+     * when no workspace type matches.
+     *
+     * @throws ResolutionException several match
+     */
+    static String qualifyInSources(String typeName, List<FileObject> sourceRoots) throws ResolutionException {
         String simple = typeName.substring(typeName.lastIndexOf('.') + 1);
         Set<String> matches = new TreeSet<>();
         for (FileObject root : sourceRoots) {
@@ -161,10 +179,7 @@ final class SymbolResolver {
             }
         }
         if (matches.isEmpty()) {
-            throw new ResolutionException("No type " + typeName + " in the workspace sources (library types are not "
-                    + "supported yet). " + (Offered.has("find_symbol")
-                    ? "Use find_symbol with a prefix or glob, e.g. \"" + simple.substring(0, Math.min(4, simple.length())) + "*\", to look it up."
-                    : "Check the name, e.g. by searching the sources for the class declaration."));
+            return null;
         }
         if (matches.size() > 1) {
             throw new ResolutionException("'" + typeName + "' is ambiguous, write the type qualified. Candidates: "

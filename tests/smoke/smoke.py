@@ -407,6 +407,20 @@ expect("private final field com.acme.shop.Order#lines : List<Order.Line>")
 tool("outline", {"file": "src/main/java/com/acme/shop/CardPayment.java"})
 expect("class com.acme.shop.CardPayment implements PaymentService")
 
+# library types: the JDK and the dependencies, read from the class files
+tool("outline", {"symbol": "java.util.ArrayList"})
+expect_ok()
+expect("java.util.ArrayList  [library: java.base (JDK)")
+expect("public method java.util.ArrayList#add(java.lang.Object) : boolean")
+tool("outline", {"symbol": "Assertions", "limit": 400})
+expect("org.junit.jupiter.api.Assertions  [library: junit-jupiter-api-5.10.2.jar")
+expect("public static method org.junit.jupiter.api.Assertions#fail() : <V> V")
+tool("find_symbol", {"query": "Assertions#assertThrows", "include_libraries": True})
+expect("org.junit.jupiter.api.Assertions#assertThrows(java.lang.Class,org.junit.jupiter.api.function.Executable)  method  "
+       "[library: junit-jupiter-api-5.10.2.jar]")
+tool("find_symbol", {"query": "util.Date#getYear", "include_libraries": True})
+expect("java.util.Date#getYear()  method  [library: java.base (JDK)]  (deprecated)")
+
 tool("diagnostics", {})
 expect("No compile errors in the workspace")
 tool("diagnostics", {"files": ["src/main/java/com/acme/shop/Checkout.java", "src/main/java/Missing.java"], "include_warnings": True})
