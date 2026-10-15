@@ -31,12 +31,19 @@ import org.openide.util.lookup.ServiceProvider;
  * <workspace folder>}) as MCP server for Copilot. One server serves all workspace folders of the
  * VS Code window, each opened on its first connection; it ends with nbcode. Our own runtime has no
  * LSP server, so nothing calls the command there.
+ * <p>
+ * The command {@value #CHANGES} with the last sequence number seen returns the changes the tools wrote
+ * since ({@link ChangeLog}), waiting up to {@value #CHANGES_WAIT_SECONDS} s for one: the extension shows
+ * each refactoring as a diff and offers to undo it.
  */
 @ServiceProvider(service = CommandProvider.class)
 public final class EmbeddedServer implements CommandProvider {
 
     // NetBeans' LSP server requires its prefix nbls (and rewrites it to the client's, e.g. jdk for Oracle's extension)
     static final String CONNECTION = "nbls.dukehoff-mcp.connection";
+    static final String CHANGES = "nbls.dukehoff-mcp.changes";
+    /** Below the time a client waits for a command's answer, so the extension asks again instead. */
+    static final int CHANGES_WAIT_SECONDS = 50;
     private static final Logger LOG = Logger.getLogger(EmbeddedServer.class.getName());
     private static final Map<File, List<Tool>> WORKSPACES = new ConcurrentHashMap<>();
     private static Path socket;
@@ -44,7 +51,7 @@ public final class EmbeddedServer implements CommandProvider {
 
     @Override
     public Set<String> getCommands() {
-        return Set.of(CONNECTION);
+        return Set.of(CONNECTION, CHANGES);
     }
 
     @Override
@@ -56,6 +63,12 @@ public final class EmbeddedServer implements CommandProvider {
                     "NetBeans' Java support is switched off (setting netbeans.javaSupport.enabled), so its refactoring "
                     + "engine finds nothing; enable it for Dukehoff MCP for Java"));
         }
+        if (CHANGES.equals(command)) {
+            ChangeLog.enable();
+            long after = arguments.isEmpty() || arguments.get(0) == null ? 0 : sequence(arguments.get(0));
+            return ChangeLog.after(after, CHANGES_WAIT_SECONDS * 1000L)
+                    .thenApply(entries -> entries.stream().map(ChangeLog::toJson).toList());
+        }
         try {
             Path s = start();
             // the command runs in the LSP client's context; connections are served in it, so that tools
@@ -65,6 +78,16 @@ public final class EmbeddedServer implements CommandProvider {
         } catch (IOException | InterruptedException ex) {
             LOG.log(Level.WARNING, "dukehoff-mcp: the embedded server did not start", ex);
             return CompletableFuture.failedFuture(ex);
+        }
+    }
+
+    /** A sequence number as it arrives from JSON: a number, or gson's primitive whose text is the number. */
+    static long sequence(Object argument) {
+        String text = argument instanceof Number n ? Long.toString(n.longValue()) : String.valueOf(argument).replace("\"", "");
+        try {
+            return (long) Double.parseDouble(text);
+        } catch (NumberFormatException ex) {
+            return 0;
         }
     }
 
@@ -90,6 +113,7 @@ public final class EmbeddedServer implements CommandProvider {
             dir = Files.createTempDirectory("dukehoff-mcp-"); // Windows: the user's temp directory is private
         }
         Path s = dir.resolve("embedded.sock");
+        ChangeLog.enable();
         Daemon d = new Daemon(s, null, EmbeddedServer::toolsFor, McpArgsProcessor.version(), true);
         Thread t = new Thread(() -> {
             try {
