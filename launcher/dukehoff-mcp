@@ -17,6 +17,8 @@
 #   --check            only print what would be started (and whether a server runs), then exit
 #   --stop             stop the workspace's running server, then exit
 #   --no-daemon        run a server only for this session, ending with it
+#   --ide              use the NetBeans IDE that runs with the Dukehoff MCP plugin: its open projects
+#                      in the workspace folder, its index; starts nothing
 #   --tools <list>     tools to offer: comma separated tool names, groups (core, refactor, migrate,
 #                      debug, all) and presets (copilot, claude-code); default: all. With --config, the
 #                      printed registration carries the selection
@@ -47,6 +49,7 @@ CHECK=
 STOP=
 NO_DAEMON=
 TOOLS=
+IDE=
 ALLOW_WRITES=
 CONFIG=
 WORKSPACE=
@@ -63,6 +66,7 @@ while [ $# -gt 0 ]; do
         --tools) [ $# -ge 2 ] || die "--tools needs a list"; TOOLS=$2; shift 2 ;;
         --allow-writes) [ $# -ge 2 ] || die "--allow-writes needs a list of folders"; ALLOW_WRITES=$2; shift 2 ;;
         --no-daemon) NO_DAEMON=1; shift ;;
+        --ide) IDE=1; shift ;;
         --config) [ $# -ge 2 ] || die "--config needs a client: claude, copilot, vscode, cursor, codex or omp"; CONFIG=$2; shift 2 ;;
         --version) cat "$(cd "$(dirname "$0")" && pwd)/../VERSION" 2> /dev/null || echo "dukehoff-mcp (version unknown)"; exit 0 ;;
         -h|--help) sed -n '/^# Starts/,/^# stdout/p' "$0" >&2; exit 0 ;;
@@ -78,6 +82,10 @@ if [ -n "$CONFIG" ]; then
     # the registration's tool selection, if one was given
     args=${TOOLS:+\"--tools\", \"$TOOLS\"}
     cli=${TOOLS:+ --tools $TOOLS}
+    if [ -n "$IDE" ]; then
+        args="\"--ide\"${args:+, }$args"
+        cli=" --ide$cli"
+    fi
     if [ -n "$ALLOW_WRITES" ]; then
         args="$args${args:+, }\"--allow-writes\", \"$ALLOW_WRITES\""
         cli="$cli --allow-writes \"$ALLOW_WRITES\""
@@ -188,6 +196,13 @@ fi
 [ -n "$WORKSPACE" ] || WORKSPACE=$PWD
 [ -d "$WORKSPACE" ] || die "workspace $WORKSPACE is not a directory"
 WORKSPACE=$(cd "$WORKSPACE" && pwd)
+
+# --- the server inside a running NetBeans IDE (the plugin): dukehoff-mcp.jar connects to it -------------
+if [ -n "$IDE" ]; then
+    jar=$(cd "$(dirname "$0")" && pwd)/dukehoff-mcp.jar
+    [ -f "$jar" ] || die "--ide needs $jar"
+    exec "$JDK/bin/java" -jar "$jar" --ide ${TOOLS:+--tools "$TOOLS"} ${ALLOW_WRITES:+--allow-writes "$ALLOW_WRITES"} "$WORKSPACE"
+fi
 
 # --- persistent server (runtime only): dukehoff-mcp.jar connects to it or starts it --------------------
 jar=$(cd "$(dirname "$0")" && pwd)/dukehoff-mcp.jar

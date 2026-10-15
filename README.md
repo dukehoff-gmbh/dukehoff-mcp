@@ -196,6 +196,16 @@ Clients start the server in the project directory, so no workspace argument is n
 (`dukehoff-mcp /path/to/project`) if your client starts servers elsewhere. A workspace can be one project
 or a folder of projects (Maven, Gradle, Ant).
 
+### With a running NetBeans IDE
+
+With the module installed in NetBeans (the NBM of a release), the IDE starts the server itself and an
+agent in a terminal can use it instead of a NetBeans of its own: the same index, the projects you have
+open, and the refactorings show in the editor at once. Register the launcher with `--ide`, e.g.
+`dukehoff-mcp --config claude --ide`. The agent's folder (where it was started) is its workspace: the
+tools see the projects open in NetBeans there, name files relative to it and write only inside it. If
+no project there is open, the tools say so; open it in NetBeans. NetBeans announces the server in
+`~/.dukehoff-mcp/ide/`; `-J-Ddukehoffmcp.ide.server=false` (in `etc/netbeans.conf`) turns it off.
+
 ### Choosing the tools
 
 Clients limit the number of tools, and every tool description costs context in each session. A
