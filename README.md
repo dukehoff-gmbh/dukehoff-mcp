@@ -60,6 +60,10 @@ Requirements on the target machine:
   them against that JDK's class library unless a project names another platform.
 * For Maven and Gradle projects the usual access to their dependencies (see Troubleshooting).
 
+Working in VS Code or NetBeans? Then you need no archive: the
+[VS Code extension](#vs-code-github-copilot-agent-mode) or the
+[NetBeans plugin](#with-a-running-netbeans-ide) brings the server along.
+
 Download the archive of the latest release from the
 [Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases): `dukehoff-mcp-<version>.tar.gz`
 for macOS and Linux, `dukehoff-mcp-<version>.zip` for Windows (`SHA256SUMS` has their checksums;
@@ -198,10 +202,19 @@ or a folder of projects (Maven, Gradle, Ant).
 
 ### With a running NetBeans IDE
 
-With the module installed in NetBeans (the NBM of a release), the IDE starts the server itself and an
-agent in a terminal can use it instead of a NetBeans of its own: the same index, the projects you have
-open, and the refactorings show in the editor at once. Register the launcher with `--ide`, e.g.
-`dukehoff-mcp --config claude --ide`. The agent's folder (where it was started) is its workspace: the
+If you work in NetBeans, an agent in a terminal can use the running IDE instead of a NetBeans of its
+own: the same index, the projects you have open, and the refactorings show in the editor at once.
+This needs no runtime archive:
+
+1. Install the plugin: download `dukehoff-mcp-netbeans-<version>.nbm` from the
+   [Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases), then in NetBeans 31 or
+   newer Tools > Plugins > Downloaded > Add Plugins..., Install, and restart if asked.
+   The IDE then starts the server by itself.
+2. Download `dukehoff-mcp-launcher-<version>.jar` from the same release and let it print the
+   registration with `--ide`, e.g. `java -jar dukehoff-mcp-launcher-<version>.jar --config claude --ide`.
+3. Open the project in NetBeans, then start the agent in its folder.
+
+With the runtime installed, `dukehoff-mcp --config claude --ide` does the same. The agent's folder (where it was started) is its workspace: the
 tools see the projects open in NetBeans there, name files relative to it and write only inside it. If
 no project there is open, the tools say so; open it in NetBeans. NetBeans announces the server in
 `~/.dukehoff-mcp/ide/`; `-J-Ddukehoffmcp.ide.server=false` (in `etc/netbeans.conf`) turns it off.
