@@ -60,8 +60,10 @@ public final class Workspace {
     /** Written to the cache directory once the index is complete, so the next start knows it is warm. */
     private static final String INDEXED_MARKER = "dukehoff-mcp/indexed";
 
-    /** The folder, or null for the projects open in the IDE. */
+    /** The folder; null for all the projects open in the IDE. */
     private final File root;
+    /** The projects come from the IDE (they are open there), not from opening the folder. */
+    private final boolean ide;
     /** Inside another NetBeans (the VS Code extension's): leave its global settings alone. */
     private final boolean embedded;
     /** Projects opened (before the initial scan). */
@@ -81,6 +83,7 @@ public final class Workspace {
     public Workspace(File root, boolean embedded) {
         this.root = FileUtil.normalizeFile(root);
         this.embedded = embedded;
+        this.ide = false;
     }
 
     /**
@@ -88,16 +91,38 @@ public final class Workspace {
      * those of the open projects at each call, and paths are shown in full (there is no one root folder).
      */
     public static Workspace ofOpenProjects() {
-        Workspace ws = new Workspace();
+        return ofOpenProjects(null);
+    }
+
+    /**
+     * The projects open in the IDE that lie in {@code folder} (or contain it): the folder an agent works
+     * in, which it names files relative to and which bounds where tools may write, as its harness does.
+     * Nothing is opened or primed; null stands for all open projects, shown with full paths.
+     */
+    public static Workspace ofOpenProjects(File folder) {
+        Workspace ws = new Workspace(true, folder == null ? null : FileUtil.normalizeFile(folder));
         ws.opened.complete(List.of());
         ws.scanned.complete(null);
         ws.phase = "ready";
         return ws;
     }
 
-    private Workspace() {
-        this.root = null;
+    private Workspace(boolean ide, File folder) {
+        this.root = folder;
         this.embedded = true;
+        this.ide = ide;
+    }
+
+    /** The open projects this workspace covers: in its folder, or containing it; all without a folder. */
+    private List<Project> openProjectsHere(Project[] open) {
+        List<Project> here = new ArrayList<>();
+        for (Project p : open) {
+            File dir = FileUtil.toFile(p.getProjectDirectory());
+            if (root == null || dir != null && (dir.toPath().startsWith(root.toPath()) || root.toPath().startsWith(dir.toPath()))) {
+                here.add(p);
+            }
+        }
+        return here;
     }
 
     /** The workspace folder, or null for the projects open in the IDE. */
@@ -107,7 +132,8 @@ public final class Workspace {
 
     /** What this workspace covers, for status output. */
     public String describe() {
-        return root != null ? root.getPath() : "the projects open in the IDE";
+        return root == null ? "the projects open in the IDE"
+                : ide ? root.getPath() + " (the projects open in the IDE there)" : root.getPath();
     }
 
     /**
@@ -154,8 +180,8 @@ public final class Workspace {
 
     /** Projects opened for this workspace, or an empty list while still opening. */
     public List<Project> getProjects() {
-        if (root == null) {
-            return List.of(OpenProjects.getDefault().getOpenProjects());
+        if (ide) {
+            return openProjectsHere(OpenProjects.getDefault().getOpenProjects());
         }
         return opened.isDone() && !opened.isCompletedExceptionally() ? opened.join() : List.of();
     }
@@ -370,7 +396,7 @@ public final class Workspace {
      * @throws NotReadyException if the workspace is not ready in time
      */
     public List<FileObject> awaitSourceRoots() throws NotReadyException {
-        if (root == null) {
+        if (ide) {
             return awaitOpenProjectRoots();
         }
         long start = System.currentTimeMillis();
@@ -425,13 +451,19 @@ public final class Workspace {
         } catch (InterruptedException | ExecutionException ex) {
             throw new NotReadyException("The IDE's projects could not be opened: " + ex.getMessage());
         }
-        if (open.length == 0) {
-            throw new NotReadyException("No project is open in the IDE. Open the project (Maven, Gradle, Ant) "
-                    + "and call this tool again.");
+        List<Project> here = openProjectsHere(open);
+        if (here.isEmpty()) {
+            throw new NotReadyException(root == null
+                    ? "No project is open in the IDE. Open the project (Maven, Gradle, Ant) and call this tool again."
+                    : "No project in " + root + " is open in the IDE. Open it there (File > Open Project; Maven, "
+                    + "Gradle or Ant) and call this tool again.");
         }
         phases[0] = System.currentTimeMillis();
         List<File> dirs = new ArrayList<>();
-        for (Project p : open) {
+        if (root != null) {
+            dirs.add(root);
+        }
+        for (Project p : here) {
             File dir = FileUtil.toFile(p.getProjectDirectory());
             if (dir != null) {
                 dirs.add(dir);
@@ -440,7 +472,7 @@ public final class Workspace {
         FileUtil.refreshFor(dirs.toArray(File[]::new));
         phases[1] = System.currentTimeMillis();
         phases[2] = phases[1];
-        List<FileObject> roots = javaSourceRoots(Arrays.asList(open));
+        List<FileObject> roots = javaSourceRoots(here);
         try {
             waitForScan(roots, Math.max(1, deadline - System.currentTimeMillis()));
             phases[3] = System.currentTimeMillis();
