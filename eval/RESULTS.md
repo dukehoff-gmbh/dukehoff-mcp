@@ -837,3 +837,29 @@ JUnit rules). Claude Code 2.x, default tool deferral.
 - Next: the same task with an explicit instruction to use `apply_rule` (does it save tokens or time,
   is a correct result easier to get), and a migration whose meaning depends on types a script cannot
   see.
+
+### Instructed to use `apply_rule` (2026-10-15, task `02-junit5-rules`)
+
+The same migration with the instruction to do the code changes with `apply_rule` (hand edits only for
+what rules cannot express, and `pom.xml`); scripts stay allowed. 12 sessions; the baseline is the
+scripted one above.
+
+| model | mode | correct | turns | cost (USD) | seconds | Edit calls | apply_rule calls |
+|---|---|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline (scripted, above) | 3/3 | 18.0 | 0.230 | 74 | 4 | - |
+| Sonnet 5.5 | instructed | 3/3 | 115.0 ± 29.2 | 0.784 | 232 | 197 | 38 |
+| Sonnet 5.5 | instructed + skill | 3/3 | 25.0 ± 1.7 | 0.282 | 77 | 12 | 15 |
+| Haiku 4.5 | baseline (scripted, above) | 3/3 | 51.0 | 0.042 | 152 | 14 | - |
+| Haiku 4.5 | instructed | 3/3 | 95.0 ± 18.5 | 0.330 | 326 | 60 | 42 |
+| Haiku 4.5 | instructed + skill | 3/3 | 87.3 ± 34.6 | 0.120 | 219 | 111 | 25 |
+
+- All correct. With the skill, Sonnet typed every variable and migrated all assertions in one call:
+  as cheap and fast as scripting, not cheaper. Haiku is slower and dearer with rules in both modes.
+- Without the skill, sessions wrote untyped rules, which miss the statically imported `Object`
+  overloads; a later search said "No matches" although calls were left, and the sessions fixed them
+  by hand (Sonnet: 197 edits). Fix in the tool: tell agents to type every variable.
+- Almost every session first tried annotation patterns (`@org.junit.Test(expected = $e) public void
+  $m() {...}`) and got "The rule does not parse as Java" from our syntax check, without a hint that
+  `org.junit.Test => org.junit.jupiter.api.Test` rewrites the type and attributes need hand edits.
+- For JUnit the argument count decides the meaning, so scripts do as well as rules. Still open: a
+  migration whose meaning depends on types a script cannot see.
