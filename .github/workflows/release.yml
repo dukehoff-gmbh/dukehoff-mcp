@@ -6,7 +6,8 @@
 name: Release
 
 # A tag v<version> (e.g. v0.1.0) builds that version, runs the smoke test and publishes a GitHub
-# release with the runtime archives and their checksums. Started by hand (Actions > Release > Run
+# release with the runtime archives, the VS Code extension, the NetBeans plugin, the launcher jar and
+# their checksums. Started by hand (Actions > Release > Run
 # workflow) it is a dry run: the same build and test, the archives only as a workflow artifact.
 
 on:
@@ -57,9 +58,12 @@ jobs:
       - name: Checksums
         working-directory: runtime/target
         run: |
-          cp ../../vscode/target/dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix .
-          sha256sum dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz dukehoff-mcp-${{ steps.version.outputs.version }}.zip \
-              dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix > SHA256SUMS
+          v=${{ steps.version.outputs.version }}
+          cp ../../vscode/target/dukehoff-mcp-java-$v.vsix .
+          cp ../../server/target/dukehoff-mcp-server-$v.nbm dukehoff-mcp-netbeans-$v.nbm
+          cp ../../launcher/target/dukehoff-mcp.jar dukehoff-mcp-launcher-$v.jar
+          sha256sum dukehoff-mcp-$v.tar.gz dukehoff-mcp-$v.zip dukehoff-mcp-java-$v.vsix dukehoff-mcp-netbeans-$v.nbm \
+              dukehoff-mcp-launcher-$v.jar > SHA256SUMS
 
       - name: Publish the release
         if: github.ref_type == 'tag'
@@ -74,12 +78,16 @@ jobs:
           [README](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/README.md#installation).
           Needs a JDK 17 or newer. For VS Code: install \`dukehoff-mcp-java-${VERSION}.vsix\`
           (Extensions > ... > Install from VSIX), which brings the Apache NetBeans extension along; the tools
-          appear in Copilot's agent mode as the server Java. \`SHA256SUMS\` has the checksums of all three.
+          appear in Copilot's agent mode as the server Java. For NetBeans: install
+          \`dukehoff-mcp-netbeans-${VERSION}.nbm\` (Tools > Plugins > Downloaded); agents in a terminal reach the
+          running IDE with \`java -jar dukehoff-mcp-launcher-${VERSION}.jar --ide\` (see the README).
+          \`SHA256SUMS\` has the checksums of all files.
           EOF
           prerelease=; case "$VERSION" in *-*) prerelease=--prerelease ;; esac
           gh release create "${GITHUB_REF_NAME}" --title "Dukehoff MCP for Java ${VERSION}" \
               --notes-file notes.md --generate-notes $prerelease \
-              "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" "dukehoff-mcp-java-${VERSION}.vsix" SHA256SUMS
+              "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" "dukehoff-mcp-java-${VERSION}.vsix" \
+              "dukehoff-mcp-netbeans-${VERSION}.nbm" "dukehoff-mcp-launcher-${VERSION}.jar" SHA256SUMS
 
       - name: Keep the archives (dry run)
         if: github.ref_type != 'tag'
@@ -90,5 +98,7 @@ jobs:
             runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.tar.gz
             runtime/target/dukehoff-mcp-${{ steps.version.outputs.version }}.zip
             runtime/target/dukehoff-mcp-java-${{ steps.version.outputs.version }}.vsix
+            runtime/target/dukehoff-mcp-netbeans-${{ steps.version.outputs.version }}.nbm
+            runtime/target/dukehoff-mcp-launcher-${{ steps.version.outputs.version }}.jar
             runtime/target/SHA256SUMS
           retention-days: 7
