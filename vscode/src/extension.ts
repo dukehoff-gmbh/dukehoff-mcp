@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as agentHints from './agentHints';
 
 /**
  * Registers the Java MCP server for Copilot (and any agent in VS Code). The server runs inside the
@@ -52,6 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }));
 
+    agentHints.register(context, log);
     const changes = new Changes(log);
     context.subscriptions.push(changes, vscode.workspace.registerTextDocumentContentProvider(BEFORE, changes));
 
@@ -60,6 +62,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (found.length > 0) {
             if (await writeConnection(connectionFile, log)) {
                 void changes.watch();
+                void agentHints.offerOnce(context);
             }
         } else {
             log.appendLine('no Java project in this workspace; NetBeans is not started for the MCP server');
