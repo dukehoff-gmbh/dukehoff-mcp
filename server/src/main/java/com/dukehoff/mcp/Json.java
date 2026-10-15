@@ -4,7 +4,9 @@
  */
 package com.dukehoff.mcp;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,5 +45,21 @@ public final class Json {
     public static int integer(Map<?, ?> args, String key, int defaultValue) {
         Object v = args.get(key);
         return v instanceof Number n ? n.intValue() : defaultValue;
+    }
+
+    /** A list of strings; a single string counts as a list of one (agents send either). */
+    public static List<String> strings(Map<?, ?> args, String key) {
+        Object v = args.get(key);
+        List<String> result = new ArrayList<>();
+        if (v instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof String s && !s.isBlank()) {
+                    result.add(s.trim());
+                }
+            }
+        } else if (v instanceof String s && !s.isBlank()) {
+            result.add(s.trim());
+        }
+        return result;
     }
 }

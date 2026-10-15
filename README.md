@@ -32,6 +32,13 @@ directory, is `dukehoff-mcp`; agents see its tools under the server name `java`.
 All refactoring tools write their changes to disk and return warnings plus a unified diff (`git diff`
 format). Fatal problems stop them before anything changes.
 
+They write only inside the workspace (in an IDE: the open projects), like an agent harness that treats
+everything outside the session's folder as external. A refactoring that would also change a file
+outside (a source folder of the build that lies elsewhere, for example) changes nothing and names those
+files; the agent is told to ask the user and then call again with `allow_outside` (files or folders).
+Folders that may always be changed are set per registration with `--allow-writes <folder,...>`
+(relative to the workspace), in VS Code with the setting `dukehoffMcp.allowedWritePaths`.
+
 Symbols are addressed by name, not by cursor position:
 
 ```

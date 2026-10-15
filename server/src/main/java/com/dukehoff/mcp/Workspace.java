@@ -505,6 +505,46 @@ public final class Workspace {
     }
 
     /**
+     * Where tools may write ({@link WriteBoundary}): the workspace folder (in the IDE: the open projects'
+     * folders), the folders the registration allows and the given paths, relative ones resolved like
+     * {@link #findFile} resolves them.
+     */
+    public List<File> writableRoots(List<String> allowed) {
+        List<File> roots = new ArrayList<>();
+        if (root != null) {
+            roots.add(root);
+        } else {
+            for (Project p : OpenProjects.getDefault().getOpenProjects()) {
+                File dir = FileUtil.toFile(p.getProjectDirectory());
+                if (dir != null) {
+                    roots.add(dir);
+                }
+            }
+        }
+        List<String> extra = new ArrayList<>(WriteBoundary.registered());
+        extra.addAll(allowed);
+        for (String path : extra) {
+            roots.add(resolve(path));
+        }
+        return roots;
+    }
+
+    /** A path as given by the agent or the user, also when nothing exists there. */
+    private File resolve(String path) {
+        File f = new File(path);
+        if (!f.isAbsolute()) {
+            FileObject existing = findFile(path);
+            File base = root;
+            if (base == null) {
+                Project[] open = OpenProjects.getDefault().getOpenProjects();
+                base = open.length == 0 ? null : FileUtil.toFile(open[0].getProjectDirectory());
+            }
+            f = existing != null && FileUtil.toFile(existing) != null ? FileUtil.toFile(existing) : new File(base, path);
+        }
+        return FileUtil.normalizeFile(f);
+    }
+
+    /**
      * Returns the path of a file relative to the workspace, or its absolute path outside of it (and
      * always in the IDE).
      */

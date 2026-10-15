@@ -59,6 +59,7 @@ public final class RenameTool implements Tool {
                                 "description", "Symbol, e.g. com.acme.OrderService#save(Order); the package may be left out when the type name is unique"),
                         "new_name", Json.obj("type", "string",
                                 "description", "New simple name, e.g. store (not qualified)"),
+                        RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Maximum diff lines returned, default " + RefactoringRunner.DEFAULT_MAX_DIFF_LINES
                                 + "; the rename itself is always complete")),
@@ -122,6 +123,7 @@ public final class RenameTool implements Tool {
                 .involving(symbol.file())
                 // a renamed public class renames its file
                 .relocatingWith(fo -> fo.getParent() != null ? fo.getParent().getFileObject(newName, fo.getExt()) : null)
+                .allowingOutside(arguments)
                 .run(maxDiffLines);
     }
 }

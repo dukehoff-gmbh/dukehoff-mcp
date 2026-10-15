@@ -61,6 +61,7 @@ public final class MoveTool implements Tool {
                                 "description", "Top-level type, e.g. com.acme.shop.Invoice; the package may be left out when the type name is unique"),
                         "target_package", Json.obj("type", "string",
                                 "description", "Package to move to, e.g. com.acme.billing"),
+                        RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Maximum diff lines returned, default "
                                 + RefactoringRunner.DEFAULT_MAX_DIFF_LINES + "; the move itself is always complete")),
@@ -109,6 +110,7 @@ public final class MoveTool implements Tool {
                     FileObject folder = root.getFileObject(targetPath);
                     return folder != null ? folder.getFileObject(nameExt) : null;
                 })
+                .allowingOutside(arguments)
                 .run(maxDiffLines);
     }
 }

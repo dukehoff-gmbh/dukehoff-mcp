@@ -83,6 +83,7 @@ public final class ChangeSignatureTool implements Tool {
                         "return_type", Json.obj("type", "string", "description", "New return type, e.g. Optional<Order>"),
                         "visibility", Json.obj("type", "string", "enum", List.of("public", "protected", "package", "private"),
                                 "description", "New visibility"),
+                        RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Maximum diff lines returned, default " + RefactoringRunner.DEFAULT_MAX_DIFF_LINES)),
                 "required", List.of("symbol"));
@@ -193,6 +194,7 @@ public final class ChangeSignatureTool implements Tool {
         refactoring.getContext().add(JavaRefactoringUtils.getClasspathInfoFor(symbol.file()));
         return new RefactoringRunner(workspace, r.roots(), refactoring, "change the signature of " + symbol.signature())
                 .involving(symbol.file())
+                .allowingOutside(arguments)
                 .run(maxDiffLines);
     }
 
