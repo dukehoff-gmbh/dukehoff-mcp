@@ -14,12 +14,14 @@
 #
 # Usage: run.sh [--reps N] [--model M] [--modes baseline,netbeans] [--tasks GLOB]
 #               [--dukehoff-mcp PATH] [--budget USD] [--tasks-dir DIR]
-#               [--repo DIR --workspace SUBDIR] [--plugin DIR] [--stop-after N]
+#               [--repo DIR --workspace SUBDIR] [--plugin DIR] [--stop-after N] [--allow CMDS]
 #   --budget     spending cap per session (claude --max-budget-usd), default 3
 #   --repo       run on an existing git checkout instead of the generated fixture; the
 #                workspace SUBDIR must have no uncommitted changes and is reset with
 #                git checkout/clean before every session (use a clone, not your checkout)
 #   --plugin     load this Claude Code plugin (e.g. skills) in netbeans mode (--plugin-dir)
+#   --allow      further shell commands the agent may run in both modes, comma separated (e.g.
+#                python3,sed,perl for a migration that agents would script)
 #   --stop-after end each session from outside after N tool calls (stop_after.py), to measure only
 #                which tools a session starts with; unlike --budget, the model does not see the limit
 # Environment: EVAL_DIR work and result directory (default ${TMPDIR:-/tmp}/dukehoffmcp-eval)
@@ -51,6 +53,7 @@ GIT_REPO=
 GIT_WORKSPACE=
 PLUGIN=
 STOP_AFTER=
+ALLOW=
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -65,6 +68,7 @@ while [ $# -gt 0 ]; do
         --workspace) GIT_WORKSPACE=$2; shift 2 ;;
         --plugin) PLUGIN=$(cd "$2" && pwd); shift 2 ;;
         --stop-after) STOP_AFTER=$2; shift 2 ;;
+        --allow) ALLOW=$2; shift 2 ;;
         *) echo "unknown argument $1" >&2; exit 2 ;;
     esac
 done
@@ -92,6 +96,10 @@ echo "Results: $RESULTS"
 BASE_TOOLS=(Read Edit Write Glob Grep "Bash(./compile.sh)" "Bash(javac:*)" "Bash(java:*)"
     "Bash(grep:*)" "Bash(find:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(git diff:*)" "Bash(git status:*)"
     "Bash(mvn:*)" "Bash(ant:*)")
+IFS=, read -r -a extra <<< "$ALLOW"
+for cmd in ${extra[@]+"${extra[@]}"}; do
+    BASE_TOOLS+=("Bash($cmd:*)")
+done
 
 fresh_project() {
     if [ -n "$GIT_REPO" ]; then
