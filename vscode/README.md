@@ -25,7 +25,8 @@ Install the extension and open a Maven, Gradle or Ant project. The tools appear 
 mode under the server **Java**; VS Code asks once before starting it. Indexing a new project takes a
 moment; the tools wait for it.
 
-Requirements: a JDK 17 or newer (the one the NetBeans extension uses, setting `netbeans.jdkhome`, or
+Requirements: VS Code 1.101 or newer (its MCP support; older versions refuse to install the
+extension), a JDK 17 or newer (the one the NetBeans extension uses, setting `netbeans.jdkhome`, or
 `JAVA_HOME`), and NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the default).
 
 ## Review refactorings
