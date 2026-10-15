@@ -255,11 +255,21 @@ final class Proxy {
      * Relays stdin to the daemon and the daemon's answers to stdout. Ends when the daemon closes the
      * connection: after the client closed stdin (status 0) or because it stopped (status 1).
      */
+    /** Folders the tools may write to besides the workspace ({@code --allow-writes}), passed on to the server. */
+    private String allowWrites;
+
+    /** Sets the folders the tools may write to besides the workspace (comma separated), or null. */
+    Proxy allowingWrites(String folders) {
+        this.allowWrites = folders;
+        return this;
+    }
+
     int relay(Connection c, String tools, String workspace, InputStream in, OutputStream out) throws IOException, InterruptedException {
         SocketChannel channel = c.channel();
         // the registration's tool selection and, for a server of several workspaces, the folder; the
         // daemon answers connected, or error for unknown names or an unusable folder
         write(channel, "{\"dukehoffmcp\":\"connect\"" + (tools == null ? "" : ",\"tools\":\"" + json(tools) + "\"")
+                + (allowWrites == null ? "" : ",\"allowWrites\":\"" + json(allowWrites) + "\"")
                 + (workspace == null ? "" : ",\"workspace\":\"" + json(workspace) + "\"") + "}\n");
         String answer = readLine(channel);
         if (answer == null || !answer.contains("\"dukehoffmcp\":\"connected\"")) {

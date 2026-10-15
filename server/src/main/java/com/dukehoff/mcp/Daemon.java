@@ -195,7 +195,8 @@ final class Daemon {
             LOG.log(Level.INFO, "dukehoff-mcp daemon: client connected with {0} tools, {1} connected",
                     new Object[]{selected.size(), now});
             try {
-                new McpServer(in, out, selected).run();
+                new McpServer(in, out, selected,
+                        WriteBoundary.parse(message.get("allowWrites") instanceof String s ? s : null)).run();
             } finally {
                 idleSince = System.currentTimeMillis();
                 LOG.log(Level.INFO, "dukehoff-mcp daemon: client disconnected, {0} connected", clients.decrementAndGet());

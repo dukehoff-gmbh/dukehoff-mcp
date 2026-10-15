@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -17,6 +18,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import org.netbeans.api.queries.FileEncodingQuery;
 import com.dukehoff.mcp.ChangeLog;
+import com.dukehoff.mcp.Json;
+import com.dukehoff.mcp.WriteBoundary;
 import com.dukehoff.mcp.Tool.Result;
 import com.dukehoff.mcp.Workspace;
 import org.netbeans.modules.parsing.api.indexing.IndexingManager;
@@ -61,6 +64,46 @@ final class RefactoringRunner {
         this.roots = roots;
         this.refactoring = refactoring;
         this.description = description;
+    }
+
+    /** The argument with paths outside the workspace a call may change, after the user agreed. */
+    static final String ALLOW_OUTSIDE = "allow_outside";
+    static final Map<String, Object> ALLOW_OUTSIDE_SCHEMA = Json.obj("type", "array", "items", Json.obj("type", "string"),
+            "description", "Files or folders outside the workspace this call may change. Only with the user's consent: "
+            + "without it, a call that would change files outside the workspace changes nothing and names them, "
+            + "so that you can ask the user first");
+    private List<String> allowOutside = List.of();
+
+    /** Takes the paths outside the workspace the call allows ({@value #ALLOW_OUTSIDE}). */
+    RefactoringRunner allowingOutside(Map<?, ?> arguments) {
+        allowOutside = Json.strings(arguments, ALLOW_OUTSIDE);
+        return this;
+    }
+
+    /**
+     * Why a change of these files is refused: some lie outside where tools may write
+     * ({@link WriteBoundary}); null when all may be written.
+     */
+    static String outsideRefusal(Workspace workspace, Collection<File> files, List<String> allowOutside) {
+        List<File> outside = WriteBoundary.outside(files, workspace.writableRoots(allowOutside));
+        if (outside.isEmpty()) {
+            return null;
+        }
+        String where = workspace.getRoot() != null ? "the workspace" : "the open projects";
+        StringBuilder sb = new StringBuilder("it would also change ").append(outside.size())
+                .append(outside.size() == 1 ? " file" : " files").append(" outside ").append(where).append(":\n");
+        outside.stream().limit(10).forEach(f -> sb.append("  ").append(f.getPath()).append('\n'));
+        if (outside.size() > 10) {
+            sb.append("  ... and ").append(outside.size() - 10).append(" more\n");
+        }
+        // what to allow: the files, or for many their folders
+        List<String> allow = (outside.size() <= 10 ? outside.stream() : outside.stream().map(File::getParentFile))
+                .map(File::getPath).distinct().limit(10).toList();
+        sb.append("Nothing was changed. Files outside ").append(where).append(" are changed only with the user's ")
+                .append("consent: ask the user, and if they agree, call again with ").append(ALLOW_OUTSIDE).append(": [")
+                .append(String.join(", ", allow.stream().map(p -> "\"" + p.replace("\\", "\\\\") + "\"").toList()))
+                .append("]. Folders that may always be changed are set where the server is registered (--allow-writes).");
+        return sb.toString();
     }
 
     /** Files to include in the diff even if no refactoring element points at them. */
@@ -123,6 +166,11 @@ final class RefactoringRunner {
             }
             for (RefactoringElement re : session.getRefactoringElements()) {
                 snapshot(re.getParentFile(), before);
+            }
+            String refusal = outsideRefusal(workspace,
+                    before.values().stream().map(Before::file).filter(f -> f != null).toList(), allowOutside);
+            if (refusal != null) {
+                return Result.error("Cannot " + description + ": " + refusal + warningsText(warnings));
             }
             CompileCheck check = CompileCheck.before(workspace, roots, before.keySet());
             Problem commit = collect(session.doRefactoring(true), warnings);

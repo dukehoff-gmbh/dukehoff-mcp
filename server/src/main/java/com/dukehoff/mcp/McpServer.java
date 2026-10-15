@@ -109,8 +109,15 @@ public final class McpServer {
     private final Writer out;
     private final Map<String, Tool> tools = new LinkedHashMap<>();
     private final RequestProcessor worker = new RequestProcessor("MCP tool calls", 4, true);
+    /** Folders this client's registration lets tools write to besides the workspace ({@link WriteBoundary}). */
+    private final List<String> allowWrites;
 
     public McpServer(InputStream in, OutputStream out, List<? extends Tool> tools) {
+        this(in, out, tools, List.of());
+    }
+
+    public McpServer(InputStream in, OutputStream out, List<? extends Tool> tools, List<String> allowWrites) {
+        this.allowWrites = List.copyOf(allowWrites);
         this.in = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
         this.out = new OutputStreamWriter(out, StandardCharsets.UTF_8);
         for (Tool t : tools) {
@@ -228,6 +235,7 @@ public final class McpServer {
         SlowCall slow = new SlowCall(tool.name(), args, Thread.currentThread(), start, SLOW_CALL_MILLIS);
         Tool.Result result;
         Offered.set(tools.keySet());
+        WriteBoundary.set(allowWrites);
         try {
             result = tool.call(args);
         } catch (Exception | LinkageError | AssertionError ex) {
@@ -235,6 +243,7 @@ public final class McpServer {
             result = Tool.Result.error(tool.name() + " failed: " + ex);
         } finally {
             Offered.clear();
+            WriteBoundary.clear();
             slow.stop();
         }
         // clients give up after their own timeout (Copilot: 60 s) and say only "timed out"; the log says where

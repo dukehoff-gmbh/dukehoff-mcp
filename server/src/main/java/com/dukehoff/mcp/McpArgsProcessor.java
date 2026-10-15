@@ -57,6 +57,11 @@ public final class McpArgsProcessor implements ArgsProcessor {
     @Messages("DESC_McpWorkspace=Folder with the project(s) the MCP server works on; defaults to the current directory")
     public String workspace;
 
+    @Arg(longName = "mcp-allow-writes")
+    @Description(shortDescription = "#DESC_McpAllowWrites")
+    @Messages("DESC_McpAllowWrites=Comma separated folders the tools may write to besides the workspace")
+    public String allowWrites;
+
     @Arg(longName = "mcp-tools")
     @Description(shortDescription = "#DESC_McpTools")
     @Messages("DESC_McpTools=Tools to offer: comma separated tool names, groups (core, refactor, migrate, debug, all) and presets (copilot, claude-code); default all")
@@ -106,7 +111,7 @@ public final class McpArgsProcessor implements ArgsProcessor {
             if (socket != null) {
                 new Daemon(Paths.get(socket), dir, tools, version()).run();
             } else {
-                new McpServer(protocolIn, protocolOut, selected).run();
+                new McpServer(protocolIn, protocolOut, selected, WriteBoundary.parse(allowWrites)).run();
             }
         } catch (IOException ex) {
             throw (CommandException) new CommandException(571).initCause(ex);

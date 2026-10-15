@@ -52,6 +52,8 @@ public final class Launcher {
             "  --tools <list>     tools to offer: comma separated tool names, groups (core, refactor,",
             "                     migrate, debug, all) and presets (copilot, claude-code); default: all.",
             "                     With --config, the printed registration carries the selection",
+            "  --allow-writes <l> comma separated folders refactorings may change besides the workspace;",
+            "                     other files outside it only when a call allows them (after asking the user)",
             "  --config <client>  print the configuration that registers this server with a client",
             "                     (claude, copilot, vscode, cursor, codex, omp), then exit",
             "  --version          print the version, then exit",
@@ -106,6 +108,7 @@ public final class Launcher {
         boolean stop;
         boolean noDaemon;
         String tools;
+        String allowWrites;
         String config;
         boolean version;
         Path connect;
@@ -126,6 +129,7 @@ public final class Launcher {
                 case "--stop" -> o.stop = true;
                 case "--no-daemon" -> o.noDaemon = true;
                 case "--tools" -> o.tools = value(args, ++i, a);
+                case "--allow-writes" -> o.allowWrites = value(args, ++i, a);
                 case "--config" -> o.config = value(args, ++i, "--config needs a client: claude, copilot, vscode, cursor, codex or omp;");
                 case "--version" -> o.version = true;
                 case "--connect" -> o.connect = Paths.get(value(args, ++i, a));
@@ -180,7 +184,7 @@ public final class Launcher {
         if (o.connect != null || o.connectFile != null) {
             // the server runs elsewhere (inside the VS Code extension's NetBeans): no runtime, no JDK needed
             String workspace = o.workspace == null ? null : o.workspace.toAbsolutePath().normalize().toString();
-            Proxy proxy = new Proxy(System.err);
+            Proxy proxy = new Proxy(System.err).allowingWrites(o.allowWrites);
             return o.connect != null ? proxy.runConnected(o.connect, o.tools, workspace)
                     : proxy.runConnectedFile(o.connectFile, o.tools, workspace);
         }
@@ -191,7 +195,7 @@ public final class Launcher {
         }
         Path jdk = findJdk(o.jdk, env);
         if (o.config != null) {
-            System.out.print(config(o.config, jdk.resolve("bin").resolve("java" + EXE), jar.toAbsolutePath(), o.tools));
+            System.out.print(config(o.config, jdk.resolve("bin").resolve("java" + EXE), jar.toAbsolutePath(), o.tools, o.allowWrites));
             return 0;
         }
         if (!Files.isDirectory(home.resolve("platform").resolve("lib"))) {
@@ -235,7 +239,7 @@ public final class Launcher {
         }
         if (!o.noDaemon) {
             err.println("dukehoff-mcp: workspace " + workspace + ", runtime " + home + ", JDK " + jdk + ", data " + base);
-            return new Proxy(err).run(base, Proxy.moduleVersion(home), dir -> {
+            return new Proxy(err).allowingWrites(o.allowWrites).run(base, Proxy.moduleVersion(home), dir -> {
                 try {
                     return daemonCommand(command(home, jdk, prepare(dir), dir.resolve("cache"), workspace, o.language, o.extra));
                 } catch (IOException ex) {
@@ -248,6 +252,10 @@ public final class Launcher {
         if (o.tools != null) {
             command.add("--mcp-tools");
             command.add(o.tools);
+        }
+        if (o.allowWrites != null) {
+            command.add("--mcp-allow-writes");
+            command.add(o.allowWrites);
         }
         err.println("dukehoff-mcp: workspace " + workspace + ", runtime " + home + ", JDK " + jdk + ", data " + dir);
         Process netbeans = new ProcessBuilder(command).inheritIO().start();
@@ -452,10 +460,22 @@ public final class Launcher {
      * @param tools the registration's tool selection ({@code --tools}), or null for all tools
      */
     static String config(String client, Path java, Path jar, String tools) throws UsageException {
+        return config(client, java, jar, tools, null);
+    }
+
+    /**
+     * The configuration that registers this server with a client.
+     *
+     * @param tools the registration's tool selection ({@code --tools}), or null for all tools
+     * @param allowWrites folders the tools may write to besides the workspace ({@code --allow-writes}), or null
+     */
+    static String config(String client, Path java, Path jar, String tools, String allowWrites) throws UsageException {
         String j = json(java.toString());
         String a = json(jar.toString());
-        String t = tools == null ? "" : ", \"--tools\", \"" + json(tools) + "\"";
-        String cli = tools == null ? "" : " --tools " + tools;
+        String t = (tools == null ? "" : ", \"--tools\", \"" + json(tools) + "\"")
+                + (allowWrites == null ? "" : ", \"--allow-writes\", \"" + json(allowWrites) + "\"");
+        String cli = (tools == null ? "" : " --tools " + tools)
+                + (allowWrites == null ? "" : " --allow-writes \"" + allowWrites + "\"");
         return switch (client) {
             case "claude" -> "# Claude Code, for all your projects:\n"
                     + "claude mcp add --scope user java -- \"" + java + "\" -jar \"" + jar + "\"" + cli + "\n"
