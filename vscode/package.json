@@ -58,11 +58,19 @@
           "markdownDescription": "How refactorings an agent runs through Dukehoff MCP (rename, move, change signature, apply rule, ...) are shown for review. They write the files themselves, outside the agent's own edits."
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "dukehoffMcp.addAgentHints",
+        "title": "Add Java tool hints to AGENTS.md",
+        "category": "Dukehoff MCP"
+      }
+    ]
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "package": "node -e \"require('fs').mkdirSync('target',{recursive:true})\" && vsce package --out target/"
+    "package": "node -e \"require('fs').mkdirSync('target',{recursive:true})\" && vsce package --out target/",
+    "test": "node test/agentHints.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -38,6 +38,29 @@ back, unless one was changed since). The setting `dukehoffMcp.refactoringReview`
 - `openDiff`: open the diff right away,
 - `off`: nothing; the changes are in Source Control as usual.
 
+## Help agents pick the tools
+
+Agents choose tools by what they read. A short section in the project's `AGENTS.md` (read by Copilot,
+Codex, Cursor and others) tells them to rename, move or change signatures with the tools and to look
+up callers with `find_usages`. The command **Dukehoff MCP: Add Java tool hints to AGENTS.md** shows
+the section as a diff and writes it only when you confirm; running it again updates the section
+instead of adding another. The extension suggests it once per workspace.
+
+## Troubleshooting
+
+- **No Java tools in Copilot:** the tools come from the server **Java** (Copilot's tool list in agent
+  mode; "MCP: List Servers" shows its state and output). The workspace must contain a Maven, Gradle
+  or Ant project, and NetBeans' Java support must be enabled (`netbeans.javaSupport.enabled`).
+- **The output channel "Dukehoff MCP for Java"** (View, Output) says what happened: the module version
+  inside NetBeans, the server's socket, or why it did not start.
+- **JDK:** NetBeans needs a JDK 17 or newer: the setting `netbeans.jdkhome`, else `JAVA_HOME`.
+- **After an update**, run "Developer: Reload Window" (or restart VS Code), so that NetBeans starts with
+  the new module; the output channel's module version should match the extension's.
+- **The first start of a large project** indexes it; the tools wait up to two and a half minutes, then
+  answer "not ready, call again" while indexing goes on.
+- **Results look incomplete:** build the project once (so its dependencies are downloaded) and check
+  the compile errors (`diagnostics`): files that do not compile are named in the results.
+
 Outside VS Code (Copilot CLI, Claude Code, Codex, Cursor) use the standalone server from the
 [releases](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases).
 
