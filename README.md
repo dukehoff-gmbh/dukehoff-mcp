@@ -111,12 +111,20 @@ check, so allow time: `MCP_TIMEOUT=120000 MCP_TOOL_TIMEOUT=600000` (shell profil
 
 ### VS Code (GitHub Copilot agent mode)
 
-The easiest way is the **VS Code extension** `dukehoff-mcp-java-<version>.vsix` from the
-[Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases) (Extensions view, "..." menu,
-"Install from VSIX..."). It needs no download of the runtime above: it brings the Apache NetBeans
+The easiest way is the extension **Dukehoff MCP for Java** from the
+[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=dukehoff.dukehoff-mcp-java)
+(Extensions view, search "Dukehoff MCP"; or `code --install-extension dukehoff.dukehoff-mcp-java`).
+Each release also carries it as `dukehoff-mcp-java-<version>.vsix` on the
+[Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases) ("..." menu of the Extensions
+view, "Install from VSIX..."). It needs no download of the runtime above: it brings the Apache NetBeans
 Language Server extension along and runs inside its NetBeans; the tools appear in Copilot's agent mode
 as the server **Java**. It needs NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the
 default).
+
+Refactorings write their files themselves, apart from the agent's own edits. The extension shows each
+one in a notification with **Review** (a diff of all files it changed) and **Undo**; the setting
+`dukehoffMcp.refactoringReview` chooses `notify` (default), `openDiff` (open the diff right away) or
+`off`.
 
 With the standalone runtime instead: `.vscode/mcp.json` in the project (or the user configuration,
 command palette "MCP: Open User Configuration", for all projects):
