@@ -38,7 +38,7 @@ final class UnifiedDiff {
             return "";
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("diff --git a/").append(oldPath).append(" b/").append(newPath).append('\n');
+        sb.append("diff --git ").append(side("a/", oldPath)).append(' ').append(side("b/", newPath)).append('\n');
         if (renamed) {
             sb.append("rename from ").append(oldPath).append('\n');
             sb.append("rename to ").append(newPath).append('\n');
@@ -46,21 +46,30 @@ final class UnifiedDiff {
         if (oldText.equals(newText)) {
             return sb.toString();
         }
-        sb.append("--- a/").append(oldPath).append('\n');
-        sb.append("+++ b/").append(newPath).append('\n');
+        sb.append("--- ").append(side("a/", oldPath)).append('\n');
+        sb.append("+++ ").append(side("b/", newPath)).append('\n');
         Text a = new Text(oldText);
         Text b = new Text(newText);
         hunks(a, b, edits(a.keys, b.keys), sb);
         return sb.toString();
     }
 
+    /**
+     * A path with git's a/ or b/ prefix; absolute paths (in the IDE there is no workspace folder to be
+     * relative to) are written as they are, as {@code diff -u} does.
+     */
+    private static String side(String prefix, String path) {
+        boolean absolute = path.startsWith("/") || path.matches("[A-Za-z]:[\\\\/].*");
+        return absolute ? path : prefix + path;
+    }
+
     /** Diff of a deleted file. */
     static String deletion(String path, String oldText) {
         StringBuilder sb = new StringBuilder();
-        sb.append("diff --git a/").append(path).append(" b/").append(path).append('\n');
+        sb.append("diff --git ").append(side("a/", path)).append(' ').append(side("b/", path)).append('\n');
         sb.append("deleted file mode 100644\n");
         if (!oldText.isEmpty()) {
-            sb.append("--- a/").append(path).append('\n');
+            sb.append("--- ").append(side("a/", path)).append('\n');
             sb.append("+++ /dev/null\n");
             Text a = new Text(oldText);
             Text b = new Text("");

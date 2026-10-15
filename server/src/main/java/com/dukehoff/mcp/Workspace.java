@@ -43,6 +43,8 @@ import org.openide.util.lookup.Lookups;
  * the Java LSP server does (priming build, contained projects,
  * {@link OpenProjects}) so that class paths get registered and indexed, then
  * tracks readiness for the tools.
+ * <p>
+ * Inside an IDE the tools work on the projects the user has open instead ({@link #ofOpenProjects()}).
  */
 public final class Workspace {
 
@@ -58,6 +60,7 @@ public final class Workspace {
     /** Written to the cache directory once the index is complete, so the next start knows it is warm. */
     private static final String INDEXED_MARKER = "dukehoff-mcp/indexed";
 
+    /** The folder, or null for the projects open in the IDE. */
     private final File root;
     /** Inside another NetBeans (the VS Code extension's): leave its global settings alone. */
     private final boolean embedded;
@@ -80,8 +83,50 @@ public final class Workspace {
         this.embedded = embedded;
     }
 
+    /**
+     * The projects open in the IDE the server runs in: nothing is opened or primed, the source roots are
+     * those of the open projects at each call, and paths are shown in full (there is no one root folder).
+     */
+    public static Workspace ofOpenProjects() {
+        Workspace ws = new Workspace();
+        ws.opened.complete(List.of());
+        ws.scanned.complete(null);
+        ws.phase = "ready";
+        return ws;
+    }
+
+    private Workspace() {
+        this.root = null;
+        this.embedded = true;
+    }
+
+    /** The workspace folder, or null for the projects open in the IDE. */
     public File getRoot() {
         return root;
+    }
+
+    /** What this workspace covers, for status output. */
+    public String describe() {
+        return root != null ? root.getPath() : "the projects open in the IDE";
+    }
+
+    /**
+     * The folder a build of the project may start from: the workspace folder, or in the IDE the outermost
+     * open project's folder containing the project (a Maven reactor opened with its modules).
+     */
+    public File buildRoot(Project p) {
+        if (root != null) {
+            return root;
+        }
+        FileObject dir = p.getProjectDirectory();
+        FileObject outer = dir;
+        for (Project open : OpenProjects.getDefault().getOpenProjects()) {
+            FileObject d = open.getProjectDirectory();
+            if (FileUtil.isParentOf(d, outer)) {
+                outer = d;
+            }
+        }
+        return FileUtil.toFile(outer);
     }
 
     /** Human-readable state: starting, opening projects, indexing, ready or failed. */
@@ -109,6 +154,9 @@ public final class Workspace {
 
     /** Projects opened for this workspace, or an empty list while still opening. */
     public List<Project> getProjects() {
+        if (root == null) {
+            return List.of(OpenProjects.getDefault().getOpenProjects());
+        }
         return opened.isDone() && !opened.isCompletedExceptionally() ? opened.join() : List.of();
     }
 
@@ -322,6 +370,9 @@ public final class Workspace {
      * @throws NotReadyException if the workspace is not ready in time
      */
     public List<FileObject> awaitSourceRoots() throws NotReadyException {
+        if (root == null) {
+            return awaitOpenProjectRoots();
+        }
         long start = System.currentTimeMillis();
         long deadline = start + TimeUnit.SECONDS.toMillis(WAIT_SECONDS);
         boolean startingUp = !scanned.isDone();
@@ -348,6 +399,49 @@ public final class Workspace {
                         new Object[]{Long.toString(start), Long.toString(System.currentTimeMillis())});
             }
             // the refresh above may have started another scan
+            waitForScan(roots, Math.max(1, deadline - System.currentTimeMillis()));
+            phases[3] = System.currentTimeMillis();
+        } catch (TimeoutException ex) {
+            logWait(start, phases);
+            throw notReady();
+        } catch (IOException | InterruptedException | ExecutionException ex) {
+            LOG.log(Level.INFO, "Waiting for scan failed", ex);
+        }
+        logWait(start, phases);
+        return roots;
+    }
+
+    /** {@link #awaitSourceRoots()} inside the IDE: the open projects, refreshed and scanned. */
+    private List<FileObject> awaitOpenProjectRoots() throws NotReadyException {
+        long start = System.currentTimeMillis();
+        long deadline = start + TimeUnit.SECONDS.toMillis(WAIT_SECONDS);
+        long[] phases = new long[4];
+        Project[] open;
+        try {
+            // completes once the projects of the last session are open again
+            open = OpenProjects.getDefault().openProjects().get(WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException ex) {
+            throw notReady();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new NotReadyException("The IDE's projects could not be opened: " + ex.getMessage());
+        }
+        if (open.length == 0) {
+            throw new NotReadyException("No project is open in the IDE. Open the project (Maven, Gradle, Ant) "
+                    + "and call this tool again.");
+        }
+        phases[0] = System.currentTimeMillis();
+        List<File> dirs = new ArrayList<>();
+        for (Project p : open) {
+            File dir = FileUtil.toFile(p.getProjectDirectory());
+            if (dir != null) {
+                dirs.add(dir);
+            }
+        }
+        FileUtil.refreshFor(dirs.toArray(File[]::new));
+        phases[1] = System.currentTimeMillis();
+        phases[2] = phases[1];
+        List<FileObject> roots = javaSourceRoots(Arrays.asList(open));
+        try {
             waitForScan(roots, Math.max(1, deadline - System.currentTimeMillis()));
             phases[3] = System.currentTimeMillis();
         } catch (TimeoutException ex) {
@@ -387,20 +481,38 @@ public final class Workspace {
     }
 
     /**
-     * Finds a file given relative to the workspace root or as an absolute path.
+     * Finds a file given relative to the workspace root (in the IDE: to an open project's folder) or as
+     * an absolute path.
      *
      * @return the file, or {@code null} if it does not exist
      */
     public FileObject findFile(String path) {
         File f = new File(path);
-        if (!f.isAbsolute()) {
-            f = new File(root, path);
+        if (f.isAbsolute()) {
+            return FileUtil.toFileObject(FileUtil.normalizeFile(f));
         }
-        return FileUtil.toFileObject(FileUtil.normalizeFile(f));
+        if (root != null) {
+            return FileUtil.toFileObject(FileUtil.normalizeFile(new File(root, path)));
+        }
+        for (Project p : OpenProjects.getDefault().getOpenProjects()) {
+            File dir = FileUtil.toFile(p.getProjectDirectory());
+            FileObject fo = dir == null ? null : FileUtil.toFileObject(FileUtil.normalizeFile(new File(dir, path)));
+            if (fo != null) {
+                return fo;
+            }
+        }
+        return null;
     }
 
-    /** Returns the path of a file relative to the workspace, or its absolute path outside of it. */
+    /**
+     * Returns the path of a file relative to the workspace, or its absolute path outside of it (and
+     * always in the IDE).
+     */
     public String displayPath(FileObject fo) {
+        if (root == null) {
+            File f = FileUtil.toFile(fo);
+            return f != null ? f.getPath() : fo.getPath();
+        }
         FileObject rootFo = FileUtil.toFileObject(root);
         if (fo.equals(rootFo)) {
             return ".";

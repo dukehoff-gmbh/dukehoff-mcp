@@ -203,7 +203,7 @@ public final class DebugTool implements Tool {
         FileObject firstTest = tests.values().iterator().next();
         Project project = FileOwnerQuery.getOwner(firstTest);
         TestCommand command = project == null ? null
-                : command(project, workspace.getRoot(), List.copyOf(new TreeSet<>(tests.keySet())), firstTest);
+                : command(project, workspace.buildRoot(project), List.copyOf(new TreeSet<>(tests.keySet())), firstTest);
         if (command == null) {
             return Result.error("The test's project is neither Maven, Gradle nor a NetBeans module; debug supports those.");
         }
