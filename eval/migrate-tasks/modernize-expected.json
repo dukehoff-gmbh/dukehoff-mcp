@@ -1,0 +1,869 @@
+{
+ "tests": 144,
+ "places": [
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "loadA01",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "findB01",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "loadC01",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "scanD01",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "lookupE01",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service01.java",
+   "method": "lookupF01",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "lookupA02",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "sumB02",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "resolveC02",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "loadD02",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "sumE02",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service02.java",
+   "method": "listF02",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "listA03",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "countB03",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "readC03",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "countD03",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "readE03",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service03.java",
+   "method": "scanF03",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "sumA04",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "loadB04",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "readC04",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "countD04",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "readE04",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service04.java",
+   "method": "listF04",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "lookupA05",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "checkB05",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "scanC05",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "loadD05",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "listE05",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service05.java",
+   "method": "lookupF05",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "listA06",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "scanB06",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "readC06",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "findD06",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "sumE06",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service06.java",
+   "method": "sumF06",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "listA07",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "lookupB07",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "checkC07",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "resolveD07",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "findE07",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service07.java",
+   "method": "resolveF07",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "resolveA08",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "lookupB08",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "lookupC08",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "countD08",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "checkE08",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service08.java",
+   "method": "scanF08",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "listA09",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "listB09",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "loadC09",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "listD09",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "resolveE09",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service09.java",
+   "method": "resolveF09",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "scanA10",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "resolveB10",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "resolveC10",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "findD10",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "countE10",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service10.java",
+   "method": "listF10",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "countA11",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "resolveB11",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "countC11",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "sumD11",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "loadE11",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service11.java",
+   "method": "resolveF11",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "listA12",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "checkB12",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "sumC12",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "findD12",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "listE12",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service12.java",
+   "method": "countF12",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "resolveA13",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "lookupB13",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "findC13",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "readD13",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "sumE13",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service13.java",
+   "method": "resolveF13",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "readA14",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "countB14",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "findC14",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "countD14",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "lookupE14",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service14.java",
+   "method": "countF14",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "scanA15",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "lookupB15",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "readC15",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "findD15",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "findE15",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service15.java",
+   "method": "scanF15",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "findA16",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "countB16",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "scanC16",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "loadD16",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "lookupE16",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service16.java",
+   "method": "checkF16",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "countA17",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "readB17",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "readC17",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "lookupD17",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "countE17",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service17.java",
+   "method": "sumF17",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "loadA18",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "checkB18",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "findC18",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "sumD18",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "loadE18",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service18.java",
+   "method": "listF18",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "loadA19",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "checkB19",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "lookupC19",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "sumD19",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "lookupE19",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service19.java",
+   "method": "scanF19",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "sumA20",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "loadB20",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "scanC20",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "findD20",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "listE20",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service20.java",
+   "method": "listF20",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "checkA21",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "countB21",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "readC21",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "checkD21",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "readE21",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service21.java",
+   "method": "loadF21",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "loadA22",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "checkB22",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "sumC22",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "lookupD22",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "checkE22",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service22.java",
+   "method": "readF22",
+   "kind": "twr",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "scanA23",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "loadB23",
+   "kind": "size",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "countC23",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "listD23",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "scanE23",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service23.java",
+   "method": "sumF23",
+   "kind": "god",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "scanA24",
+   "kind": "size",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "countB24",
+   "kind": "god",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "loadC24",
+   "kind": "iter",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "checkD24",
+   "kind": "iter",
+   "transform": true
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "checkE24",
+   "kind": "twr",
+   "transform": false
+  },
+  {
+   "file": "src/main/java/com/acme/legacy/Service24.java",
+   "method": "countF24",
+   "kind": "twr",
+   "transform": true
+  }
+ ]
+}

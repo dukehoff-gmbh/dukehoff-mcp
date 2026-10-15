@@ -863,3 +863,39 @@ scripted one above.
   `org.junit.Test => org.junit.jupiter.api.Test` rewrites the type and attributes need hand edits.
 - For JUnit the argument count decides the meaning, so scripts do as well as rules. Still open: a
   migration whose meaning depends on types a script cannot see.
+
+## 2026-10-15: modernization with structural rules (`eval/migrate-tasks/03`, `04`)
+
+The JUnit task needs no types (the argument count decides), so it cannot show what rules add. This
+one does: `make-modern-fixture.py` writes 24 classes with 144 places, 84 to modernize and 60
+look-alikes that must stay: try/finally that only closes -> try-with-resources (decoys: a `finally`
+that does more; `Session`, which has `close()` but is no `AutoCloseable`); iterator loop -> for-each
+(decoy: `it.remove()`); `m.containsKey(k) ? m.get(k) : d` -> `getOrDefault` (decoys: different keys,
+`Registry`, which has `containsKey`/`get` but is no `Map`); `size() == 0` -> `isEmpty()` (decoy:
+`Bag`, no collection). Types are mostly behind getters (`order.lines()` vs. `order.bag()`). 144
+tests check behaviour; `check-modernize.py` checks every place, the unchanged support classes and
+the tests. Verified: four rules in one `apply_rule` call solve it (84 changed, 60 kept); `sed` on
+`size() == 0` breaks 12 decoys and the build. Task 03 names no tool (scripts allowed), 04 instructs
+to use `apply_rule`. The server already had the fixes from the JUnit runs (typed-argument advice in
+the description, the javac syntax check only explains a rule that matches nothing). The skill gained
+multi-statement patterns, repeated variables and `referencedIn`, with its own examples.
+
+| model | mode | correct | turns | cost (USD) | seconds |
+|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline (03, scripts) | 3/3 | 18.3 ± 4.9 | 0.200 | 57 |
+| Sonnet 5.5 | `apply_rule` instructed (04) | 3/3 | 11.0 ± 2.6 | 0.155 | 35 |
+| Sonnet 5.5 | `apply_rule` + skill (04) | 3/3 | 21.0 ± 12.3 | 0.190 | 53 |
+| Haiku 4.5 | baseline (03, scripts) | 3/3 | 57.0 ± 56.5 | 0.034 | 123 |
+| Haiku 4.5 | `apply_rule` instructed (04) | 3/3 | 37.7 ± 16.2 | 0.032 | 111 |
+| Haiku 4.5 | `apply_rule` + skill (04) | 3/3 | 38.0 ± 15.7 | 0.029 | 106 |
+
+- All 18 correct; the scripted sessions found the look-alikes by trial and error: 3-4 builds and
+  4-8 script runs per Sonnet session. With `apply_rule`, Sonnet needed two calls (a dry run of four
+  rules, then the same applied): 40% fewer turns, 23% lower cost, 39% less time than scripting.
+- Haiku gains less (34% fewer turns, about the same cost, 10% less time) but varies far less: one
+  scripted session fell back to editing by hand (104 edits across the three).
+- The skill did not help Sonnet here (an extra search step, hand edits in one session); for Haiku
+  it is a wash. The tool description now carries what mattered (typed arguments, the structural
+  features), which may be why.
+- Together with the JUnit runs: rules pay where the meaning depends on structure and types (decoys,
+  several statements, the same expression twice), and are on par where text decides.
