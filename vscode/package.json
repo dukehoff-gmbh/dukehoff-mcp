@@ -38,7 +38,27 @@
         "id": "dukehoff-mcp",
         "label": "Dukehoff MCP for Java"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Dukehoff MCP for Java",
+      "properties": {
+        "dukehoffMcp.refactoringReview": {
+          "type": "string",
+          "enum": [
+            "off",
+            "notify",
+            "openDiff"
+          ],
+          "enumDescriptions": [
+            "Nothing: the changes are on disk (and in Source Control) only.",
+            "A notification after each refactoring, with Review (a diff of all its files) and Undo.",
+            "Open the diff of each refactoring right away; Undo in a notification."
+          ],
+          "default": "notify",
+          "markdownDescription": "How refactorings an agent runs through Dukehoff MCP (rename, move, change signature, apply rule, ...) are shown for review. They write the files themselves, outside the agent's own edits."
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "tsc -p ./",
