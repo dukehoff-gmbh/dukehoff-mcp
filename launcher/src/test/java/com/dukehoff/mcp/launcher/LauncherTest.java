@@ -109,6 +109,17 @@ public class LauncherTest {
         assertTrue(Launcher.config("codex", java, jar, "core").contains("args = [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"core\"]"));
     }
 
+    @Test
+    public void configCarriesTheAllowedFolders() throws Exception {
+        Path java = Paths.get("/jdk/bin/java");
+        Path jar = Paths.get("/opt/dukehoffmcp/bin/dukehoff-mcp.jar");
+        assertTrue(Launcher.config("vscode", java, jar, null, "../shared").contains(
+                "\"args\": [\"-jar\", \"" + json(jar) + "\", \"--allow-writes\", \"../shared\", \"${workspaceFolder}\"]"));
+        assertTrue(Launcher.config("claude", java, jar, "core", "../shared,/opt/lib").contains(
+                "-jar \"" + jar + "\" --tools core --allow-writes \"../shared,/opt/lib\"\n"));
+        assertTrue(Launcher.parse(new String[]{"--allow-writes", "../shared", "ws"}, Map.of()).allowWrites.equals("../shared"));
+    }
+
     /** A path as the configurations write it into JSON and TOML: on Windows its backslashes escaped. */
     private static String json(Path p) {
         return p.toString().replace("\\", "\\\\");

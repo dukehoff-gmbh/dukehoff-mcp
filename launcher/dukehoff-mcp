@@ -20,6 +20,8 @@
 #   --tools <list>     tools to offer: comma separated tool names, groups (core, refactor, migrate,
 #                      debug, all) and presets (copilot, claude-code); default: all. With --config, the
 #                      printed registration carries the selection
+#   --allow-writes <l> comma separated folders refactorings may change besides the workspace; other
+#                      files outside it only when a call allows them (after asking the user)
 #
 # In the dukehoff-mcp runtime the server keeps running between sessions (one per workspace, stopped after
 # 30 minutes without a client); this script then hands over to bin/dukehoff-mcp.jar, which connects to it
@@ -45,6 +47,7 @@ CHECK=
 STOP=
 NO_DAEMON=
 TOOLS=
+ALLOW_WRITES=
 CONFIG=
 WORKSPACE=
 EXTRA=()
@@ -58,6 +61,7 @@ while [ $# -gt 0 ]; do
         --check) CHECK=1; shift ;;
         --stop) STOP=1; shift ;;
         --tools) [ $# -ge 2 ] || die "--tools needs a list"; TOOLS=$2; shift 2 ;;
+        --allow-writes) [ $# -ge 2 ] || die "--allow-writes needs a list of folders"; ALLOW_WRITES=$2; shift 2 ;;
         --no-daemon) NO_DAEMON=1; shift ;;
         --config) [ $# -ge 2 ] || die "--config needs a client: claude, copilot, vscode, cursor, codex or omp"; CONFIG=$2; shift 2 ;;
         --version) cat "$(cd "$(dirname "$0")" && pwd)/../VERSION" 2> /dev/null || echo "dukehoff-mcp (version unknown)"; exit 0 ;;
@@ -74,6 +78,10 @@ if [ -n "$CONFIG" ]; then
     # the registration's tool selection, if one was given
     args=${TOOLS:+\"--tools\", \"$TOOLS\"}
     cli=${TOOLS:+ --tools $TOOLS}
+    if [ -n "$ALLOW_WRITES" ]; then
+        args="$args${args:+, }\"--allow-writes\", \"$ALLOW_WRITES\""
+        cli="$cli --allow-writes \"$ALLOW_WRITES\""
+    fi
     case "$CONFIG" in
         claude) cat << EOF
 # Claude Code, for all your projects:
@@ -185,7 +193,8 @@ WORKSPACE=$(cd "$WORKSPACE" && pwd)
 jar=$(cd "$(dirname "$0")" && pwd)/dukehoff-mcp.jar
 if [ -z "$NO_DAEMON" ] && [ -z "$NETBEANS_GIVEN" ] && [ -f "$jar" ]; then
     exec "$JDK/bin/java" -jar "$jar" --jdk "$JDK" --data "$DATA" --locale "$LANGUAGE" \
-        ${CHECK:+--check} ${STOP:+--stop} ${TOOLS:+--tools "$TOOLS"} "$WORKSPACE" -- ${EXTRA[@]+"${EXTRA[@]}"}
+        ${CHECK:+--check} ${STOP:+--stop} ${TOOLS:+--tools "$TOOLS"} ${ALLOW_WRITES:+--allow-writes "$ALLOW_WRITES"} \
+        "$WORKSPACE" -- ${EXTRA[@]+"${EXTRA[@]}"}
 fi
 if [ -n "$STOP" ]; then
     echo "dukehoff-mcp: this installation runs one server per session; nothing to stop" >&2
@@ -226,4 +235,5 @@ exec "$NETBEANS" --nogui --nosplash \
     ${CLUSTERS:+--clusters "$CLUSTERS"} \
     ${EXTRA[@]+"${EXTRA[@]}"} \
     ${TOOLS:+--mcp-tools "$TOOLS"} \
+    ${ALLOW_WRITES:+--mcp-allow-writes "$ALLOW_WRITES"} \
     --start-mcp-server --mcp-workspace "$WORKSPACE"

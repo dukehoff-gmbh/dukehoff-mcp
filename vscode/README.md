@@ -38,6 +38,13 @@ back, unless one was changed since). The setting `dukehoffMcp.refactoringReview`
 - `openDiff`: open the diff right away,
 - `off`: nothing; the changes are in Source Control as usual.
 
+## Changes outside the workspace
+
+Refactorings change only files inside the workspace folder. If one would also change a file outside
+(say, a shared source folder next to it), it changes nothing and names the files; the agent asks you
+and passes the ones you allow in its next call. Folders that may always be changed go into the
+setting `dukehoffMcp.allowedWritePaths` (relative paths are relative to the workspace folder).
+
 ## Help agents pick the tools
 
 Agents choose tools by what they read. A short section in the project's `AGENTS.md` (read by Copilot,
