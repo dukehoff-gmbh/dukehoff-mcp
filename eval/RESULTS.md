@@ -797,3 +797,43 @@ A first try of this run is discarded: `stop_after.py` crashed on `permission_den
 `message` is a string), which closed the pipe but left each session running orphaned; the sessions
 kept editing the workspace and started servers while later sessions ran. The script now ends the
 session's process group whenever it exits, also on an error.
+
+## 2026-10-15: a JUnit 4 -> 5 migration (`eval/migrate-tasks`)
+
+Question: does `apply_rule` (NetBeans Jackpot rules) help with a migration of many call sites, and
+does a skill with rule documentation help writing the rules? Fixture (`make-fixture.py`): a Maven
+project with 30 JUnit 4 test classes, 92 tests and 354 assertions, built to be hard as text edits:
+the message moves from the first to the last argument, with nested calls and string literals
+containing commas, calls over several lines, `delta` overloads, three `String` arguments (a message
+left first still compiles in JUnit 5 and then fails), static, explicit and qualified imports,
+`@Before`/`@BeforeClass`/`@After`/`@Ignore`, `@Test(expected = ...)`. `check.sh`: no JUnit 4 left in
+code or `pom.xml`, as many assertions as before, all 92 tests run (4 skipped) and pass offline; a
+correct migration passes, one message left first fails. The prompt asks for the migration without
+naming a tool; `run.sh --allow python3,sed,perl,awk` lets every mode script it. Skill:
+`eval/skills-migrate` (workflow, syntax, one rule per overload, typed variables, examples; not the
+JUnit rules). Claude Code 2.x, default tool deferral.
+
+| model | mode | correct | turns | cost (USD) | our tools / skill used |
+|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline | 3/3 | 18.0 ± 8.5 | 0.230 | - |
+| Sonnet 5.5 | netbeans | 3/3 | 21.7 ± 7.4 | 0.250 | 0/3 |
+| Sonnet 5.5 | netbeans + skill | 3/3 | 19.7 ± 2.5 | 0.246 | 0/3, 0/3 |
+| Haiku 4.5 | baseline | 3/3 | 51.0 ± 11.8 | 0.042 | - |
+| Haiku 4.5 | netbeans | 3/3 | 29.3 ± 11.8 | 0.034 | 0/3 |
+| Haiku 4.5 | netbeans + skill | 3/3 | 26.3 ± 7.1 | 0.030 | 0/3, 0/3 |
+
+- All 18 sessions are correct, and none used `apply_rule` or the skill (both loaded: the skill is in
+  the session's skill list, the tools in its tool list; no `ToolSearch`, no `Skill` call). The Haiku
+  difference between baseline and netbeans is noise (no tool of ours was called).
+- Every session wrote a migration script (Python with a small argument splitter that respects
+  parentheses and string literals, or `sed`/`perl`) and got it right in one go. For JUnit the number
+  of arguments decides the meaning (three without a `delta`: the message is first), so a script needs
+  no types: the premise that text edits fail here was wrong.
+- Writing the rules works: a rule set with one rule per overload migrates all 354 assertions,
+  imports and annotations (`@Test(expected)`, old imports and `pom.xml` by hand), and passes the
+  check. Finding: untyped variables (`org.junit.Assert.assertEquals($e, $a)`) miss statically
+  imported calls of the `Object` overloads; with `:: $e instanceof java.lang.Object && $a instanceof
+  java.lang.Object` they match. The skill says to type every variable.
+- Next: the same task with an explicit instruction to use `apply_rule` (does it save tokens or time,
+  is a correct result easier to get), and a migration whose meaning depends on types a script cannot
+  see.
