@@ -28,6 +28,16 @@ moment; the tools wait for it.
 Requirements: a JDK 17 or newer (the one the NetBeans extension uses, setting `netbeans.jdkhome`, or
 `JAVA_HOME`), and NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the default).
 
+## Review refactorings
+
+A refactoring writes its files itself, apart from the agent's own edits. After each one a
+notification names it, with **Review** (a diff of all files it changed) and **Undo** (puts the files
+back, unless one was changed since). The setting `dukehoffMcp.refactoringReview` chooses:
+
+- `notify` (default): the notification,
+- `openDiff`: open the diff right away,
+- `off`: nothing; the changes are in Source Control as usual.
+
 Outside VS Code (Copilot CLI, Claude Code, Codex, Cursor) use the standalone server from the
 [releases](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases).
 

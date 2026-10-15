@@ -4,6 +4,7 @@
  */
 package com.dukehoff.mcp.tools;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import org.netbeans.api.queries.FileEncodingQuery;
+import com.dukehoff.mcp.ChangeLog;
 import com.dukehoff.mcp.Tool.Result;
 import com.dukehoff.mcp.Workspace;
 import org.netbeans.modules.parsing.api.indexing.IndexingManager;
@@ -23,6 +25,7 @@ import org.netbeans.modules.refactoring.api.Problem;
 import org.netbeans.modules.refactoring.api.RefactoringElement;
 import org.netbeans.modules.refactoring.api.RefactoringSession;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 
 /**
  * Runs a refactoring for a tool and reports the result the same way for all
@@ -77,7 +80,7 @@ final class RefactoringRunner {
     }
 
     /** Path, URL and content of a file before the refactoring. */
-    private record Before(String path, URL url, String text) {
+    private record Before(String path, URL url, File file, String text) {
     }
 
     /**
@@ -85,7 +88,7 @@ final class RefactoringRunner {
      *
      * @param newUrl {@code null} if the file was deleted
      */
-    private record Change(String path, String diff, URL oldUrl, URL newUrl, boolean moved) {
+    private record Change(String path, String diff, URL oldUrl, URL newUrl, boolean moved, ChangeLog.FileChange file) {
     }
 
     Result run(int maxDiffLines) throws IOException {
@@ -127,6 +130,8 @@ final class RefactoringRunner {
             // the index learns about the saved files asynchronously; without this, a following
             // call (e.g. renaming a method of a just renamed class) could see stale file names
             reindex(changes);
+            // for review in the IDE, also what a failed commit changed: it can be undone there
+            ChangeLog.record(description, changes.stream().map(Change::file).toList());
             if (commit != null) {
                 return Result.error("Failed to " + description + " while applying the changes: " + commit.getMessage()
                         + warningsText(warnings) + "\nSome files may have been changed; check with git status.");
@@ -174,7 +179,7 @@ final class RefactoringRunner {
 
     private void snapshot(FileObject fo, Map<FileObject, Before> into) throws IOException {
         if (fo != null && fo.isData() && !into.containsKey(fo)) {
-            into.put(fo, new Before(workspace.displayPath(fo), fo.toURL(), read(fo)));
+            into.put(fo, new Before(workspace.displayPath(fo), fo.toURL(), FileUtil.toFile(fo), read(fo)));
         }
     }
 
@@ -190,14 +195,17 @@ final class RefactoringRunner {
             if (!fo.isValid()) {
                 fo = relocate.apply(fo);
                 if (fo == null || !fo.isValid()) {
-                    changes.add(new Change(b.path(), UnifiedDiff.deletion(b.path(), b.text()), b.url(), null, false));
+                    changes.add(new Change(b.path(), UnifiedDiff.deletion(b.path(), b.text()), b.url(), null, false,
+                            new ChangeLog.FileChange(b.file(), null, b.text(), null)));
                     continue;
                 }
             }
             String path = workspace.displayPath(fo);
-            String diff = UnifiedDiff.diff(b.path(), path, b.text(), read(fo));
+            String text = read(fo);
+            String diff = UnifiedDiff.diff(b.path(), path, b.text(), text);
             if (!diff.isEmpty()) {
-                changes.add(new Change(path, diff, b.url(), fo.toURL(), !path.equals(b.path())));
+                changes.add(new Change(path, diff, b.url(), fo.toURL(), !path.equals(b.path()),
+                        new ChangeLog.FileChange(b.file(), FileUtil.toFile(fo), b.text(), text)));
             }
         }
         return changes;

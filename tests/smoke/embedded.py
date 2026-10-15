@@ -240,6 +240,15 @@ text = call("rename", {"symbol": "demo.Greeter#greet(String)", "new_name": "welc
 expect("rename changes both files", "2 files changed" in text, text)
 with open(os.path.join(project, "src/main/java/demo/Main.java")) as f:
     expect("the rename is on disk", "welcome(" in f.read())
+# what our extension asks for to show the refactoring for review
+answer = lsp_request("workspace/executeCommand", {"command": "nbls.dukehoff-mcp.changes", "arguments": [0]}, timeout=120)
+entries = (answer or {}).get("result") or []
+renamed = [e for e in entries if "rename" in e.get("summary", "")]
+files = renamed[0]["files"] if renamed else []
+main_change = [f for f in files if (f.get("newPath") or "").endswith("Main.java")]
+expect("the changes command reports the rename with Main.java before and after",
+       bool(main_change) and "greet(" in (main_change[0].get("before") or "") and "welcome(" in (main_change[0].get("after") or ""),
+       json.dumps(answer)[:800])
 text = call("diagnostics", {})
 expect("no compile errors after the rename", "No compile errors" in text, text)
 gradle_rule = [l for l in open(os.path.join(work, "nbcode.log"), errors="replace") if "GradleSettings" in l]

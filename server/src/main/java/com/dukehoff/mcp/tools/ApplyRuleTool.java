@@ -6,6 +6,7 @@ package com.dukehoff.mcp.tools;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -31,6 +32,7 @@ import org.netbeans.api.java.source.ModificationResult;
 import org.netbeans.api.java.source.WorkingCopy;
 import org.netbeans.api.java.source.matching.Occurrence;
 import org.netbeans.api.queries.FileEncodingQuery;
+import com.dukehoff.mcp.ChangeLog;
 import com.dukehoff.mcp.Json;
 import com.dukehoff.mcp.Tool;
 import com.dukehoff.mcp.Workspace;
@@ -242,6 +244,12 @@ public final class ApplyRuleTool implements Tool {
                 urls.add(fo.toURL());
             }
             RefactoringRunner.reindex(roots, urls);
+            List<ChangeLog.FileChange> files = new ArrayList<>();
+            for (Map.Entry<FileObject, String> e : before.entrySet()) {
+                File file = FileUtil.toFile(e.getKey());
+                files.add(new ChangeLog.FileChange(file, file, e.getValue(), after.get(e.getKey())));
+            }
+            ChangeLog.record("apply_rule: " + files.size() + (files.size() == 1 ? " file" : " files"), files);
         }
 
         StringBuilder sb = new StringBuilder();
