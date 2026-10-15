@@ -32,7 +32,13 @@ const JAVA_PROJECT = '{**/pom.xml,**/build.gradle,**/build.gradle.kts,**/build.x
 export function activate(context: vscode.ExtensionContext): void {
     const log = vscode.window.createOutputChannel('Dukehoff MCP for Java');
     const changed = new vscode.EventEmitter<void>();
-    context.subscriptions.push(log, changed, vscode.workspace.onDidChangeWorkspaceFolders(() => changed.fire()));
+    context.subscriptions.push(log, changed, vscode.workspace.onDidChangeWorkspaceFolders(() => changed.fire()),
+        vscode.workspace.onDidChangeConfiguration(e => {
+            // the folders reach the server when the client connects: register the server anew
+            if (e.affectsConfiguration('dukehoffMcp.allowedWritePaths')) {
+                changed.fire();
+            }
+        }));
     const jar = path.join(context.extensionPath, 'bin', 'dukehoff-mcp.jar');
     const version: string = context.extension.packageJSON.version;
     const storage = (context.storageUri ?? context.globalStorageUri).fsPath;
@@ -47,7 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
             return folders.map(folder => new vscode.McpStdioServerDefinition(
                 folders.length > 1 ? `Java (${folder.name})` : 'Java',
                 javaCommand(),
-                ['-jar', jar, '--connect-file', connectionFile, folder.uri.fsPath],
+                ['-jar', jar, '--connect-file', connectionFile, ...allowWrites(folder), folder.uri.fsPath],
                 {},
                 version));
         }
@@ -262,6 +268,16 @@ async function connection(log: vscode.OutputChannel): Promise<string> {
         await new Promise(resolve => setTimeout(resolve, 2000));
     }
     throw new Error(`NetBeans did not provide the Java MCP server within ${CONNECT_TIMEOUT_MS / 1000} s: ${String(last)}`);
+}
+
+/**
+ * Folders refactorings may change besides the workspace folder (setting dukehoffMcp.allowedWritePaths,
+ * relative ones to the folder), as the launcher's option; other files outside only when a call allows them.
+ */
+function allowWrites(folder: vscode.WorkspaceFolder): string[] {
+    const paths = vscode.workspace.getConfiguration('dukehoffMcp', folder.uri).get<string[]>('allowedWritePaths', [])
+        .map(p => p.trim()).filter(p => p.length > 0);
+    return paths.length > 0 ? ['--allow-writes', paths.join(',')] : [];
 }
 
 /** The java to run the proxy with: NetBeans' configured JDK, JAVA_HOME, or java on the PATH. */

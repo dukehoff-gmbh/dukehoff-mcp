@@ -99,6 +99,7 @@ public final class ApplyRuleTool implements Tool {
                                 "description", "Rewrite rules: only return the diff, write nothing. Default false."),
                         "limit", Json.obj("type", "integer",
                                 "description", "Search: maximum matches listed, default " + DEFAULT_LIMIT),
+                        RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Rewrite: maximum diff lines returned, default "
                                 + RefactoringRunner.DEFAULT_MAX_DIFF_LINES)),
@@ -141,7 +142,8 @@ public final class ApplyRuleTool implements Tool {
         RefactoringRunner.WRITES.lock();
         try {
             return rewrite(rule, scope, roots, Json.bool(arguments, "dry_run", false),
-                    Json.integer(arguments, "max_diff_lines", RefactoringRunner.DEFAULT_MAX_DIFF_LINES));
+                    Json.integer(arguments, "max_diff_lines", RefactoringRunner.DEFAULT_MAX_DIFF_LINES),
+                    Json.strings(arguments, RefactoringRunner.ALLOW_OUTSIDE));
         } finally {
             RefactoringRunner.WRITES.unlock();
         }
@@ -203,7 +205,8 @@ public final class ApplyRuleTool implements Tool {
         return Result.ok(sb.toString());
     }
 
-    private Result rewrite(String rule, List<FileObject> scope, List<FileObject> roots, boolean dryRun, int maxDiffLines)
+    private Result rewrite(String rule, List<FileObject> scope, List<FileObject> roots, boolean dryRun, int maxDiffLines,
+            List<String> allowOutside)
             throws IOException {
         Collection<? extends ModificationResult> results = TransformationSupport.create(rule).processAllProjects();
         Map<FileObject, String> before = new LinkedHashMap<>();
@@ -230,6 +233,11 @@ public final class ApplyRuleTool implements Tool {
         }
         Map<FileObject, String> after = planned;
         if (!dryRun) {
+            List<File> targets = before.keySet().stream().map(FileUtil::toFile).filter(f -> f != null).toList();
+            String refusal = RefactoringRunner.outsideRefusal(workspace, targets, allowOutside);
+            if (refusal != null) {
+                return Result.error("Cannot apply the rule: " + refusal);
+            }
             for (ModificationResult mr : results) {
                 mr.commit();
             }

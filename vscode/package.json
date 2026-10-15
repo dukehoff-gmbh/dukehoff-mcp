@@ -56,6 +56,15 @@
           ],
           "default": "notify",
           "markdownDescription": "How refactorings an agent runs through Dukehoff MCP (rename, move, change signature, apply rule, ...) are shown for review. They write the files themselves, outside the agent's own edits."
+        },
+        "dukehoffMcp.allowedWritePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "markdownDescription": "Folders that refactorings (rename, move, change signature, apply rule, ...) may change besides the workspace folder, e.g. a sibling folder with shared code; relative paths are relative to the workspace folder. Other files outside it are changed only when the agent allows them in the call, which it is told to do only after asking you."
         }
       }
     },

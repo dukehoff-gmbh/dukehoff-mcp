@@ -53,6 +53,7 @@ public final class InlineTool implements Tool {
                 "properties", Json.obj(
                         "symbol", Json.obj("type", "string",
                                 "description", "Method or constant, e.g. com.acme.Foo#helper(String); the package may be left out when the type name is unique"),
+                        RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Maximum diff lines returned, default " + RefactoringRunner.DEFAULT_MAX_DIFF_LINES)),
                 "required", List.of("symbol"));
@@ -79,6 +80,7 @@ public final class InlineTool implements Tool {
         refactoring.getContext().add(JavaRefactoringUtils.getClasspathInfoFor(symbol.file()));
         return new RefactoringRunner(workspace, r.roots(), refactoring, "inline " + symbol.signature())
                 .involving(symbol.file())
+                .allowingOutside(arguments)
                 .run(maxDiffLines);
     }
 }
