@@ -70,7 +70,12 @@ public final class ApplyRuleTool implements Tool {
                 + "Syntax: <pattern> [:: <conditions>] [=> <replacement>] ;;\n"
                 + "- $name matches one expression/statement, $name$ any number of them (e.g. arguments), "
                 + "$_ is an unnamed wildcard.\n"
-                + "- Conditions constrain types: $x instanceof java.util.Collection (combine with &&).\n"
+                + "- Conditions constrain types: $x instanceof java.util.Collection (combine with &&). For calls of "
+                + "overloaded methods give every argument variable a type (java.lang.Object for any reference, long "
+                + "etc. for primitives): untyped ones can miss calls, e.g. statically imported ones.\n"
+                + "- Patterns may span statements ($T $r = $init; try { $body$; } finally { $r.close(); }); a "
+                + "variable used twice must match the same expression twice; !referencedIn($v, $body$) excludes "
+                + "places where $v is used in $body$.\n"
                 + "- Write types fully qualified; imports are added and simplified.\n"
                 + "- Several rules in one call, each ending with ;;\n"
                 + "Examples:\n"
@@ -116,10 +121,9 @@ public final class ApplyRuleTool implements Tool {
         if (!rule.endsWith(";;")) {
             rule = rule + " ;;";
         }
+        // Jackpot understands more than Java ($mods$, class members, annotations), so javac's view of the
+        // rule only explains a rule that matches nothing or that Jackpot cannot read either
         String invalid = checkSyntax(rule);
-        if (invalid != null) {
-            return Result.error(invalid);
-        }
         List<FileObject> roots;
         try {
             roots = workspace.awaitSourceRoots();
@@ -136,17 +140,35 @@ public final class ApplyRuleTool implements Tool {
                 scope.add(fo);
             }
         }
-        if (!rule.contains("=>")) {
-            return search(rule, scope, Json.integer(arguments, "limit", DEFAULT_LIMIT));
-        }
-        RefactoringRunner.WRITES.lock();
         try {
-            return rewrite(rule, scope, roots, Json.bool(arguments, "dry_run", false),
-                    Json.integer(arguments, "max_diff_lines", RefactoringRunner.DEFAULT_MAX_DIFF_LINES),
-                    Json.strings(arguments, RefactoringRunner.ALLOW_OUTSIDE));
-        } finally {
-            RefactoringRunner.WRITES.unlock();
+            if (!rule.contains("=>")) {
+                return search(rule, scope, Json.integer(arguments, "limit", DEFAULT_LIMIT), invalid);
+            }
+            RefactoringRunner.WRITES.lock();
+            try {
+                return rewrite(rule, scope, roots, Json.bool(arguments, "dry_run", false),
+                        Json.integer(arguments, "max_diff_lines", RefactoringRunner.DEFAULT_MAX_DIFF_LINES),
+                        Json.strings(arguments, RefactoringRunner.ALLOW_OUTSIDE), invalid);
+            } finally {
+                RefactoringRunner.WRITES.unlock();
+            }
+        } catch (RuntimeException ex) {
+            if (invalid != null) {
+                return Result.error(invalid);
+            }
+            throw ex;
         }
+    }
+
+    /** No matches: why, if javac cannot read the rule, else what is commonly missed. */
+    private static Result noMatches(String what, String invalid) {
+        if (invalid != null) {
+            return Result.error(what + " " + invalid);
+        }
+        return Result.ok(what + " If you expected some, check the pattern: types fully qualified, $variables for "
+                + "the parts that vary, each rule ending with ;;. Calls of overloaded methods (also statically "
+                + "imported ones) match only when every argument variable has a type: "
+                + "$x instanceof java.lang.Object for any reference, a primitive type such as long for primitives.");
     }
 
     private static boolean inScope(List<FileObject> scope, FileObject fo) {
@@ -161,7 +183,7 @@ public final class ApplyRuleTool implements Tool {
         return false;
     }
 
-    private Result search(String rule, List<FileObject> scope, int limit) {
+    private Result search(String rule, List<FileObject> scope, int limit, String invalid) {
         // file -> line -> source line (a line with several matches is listed once)
         Map<String, TreeMap<Integer, String>> byFile = Collections.synchronizedMap(new TreeMap<>());
         TransformationSupport.create(rule, (WorkingCopy wc, Occurrence occurrence) -> {
@@ -184,8 +206,7 @@ public final class ApplyRuleTool implements Tool {
 
         int total = byFile.values().stream().mapToInt(Map::size).sum();
         if (total == 0) {
-            return Result.ok("No matches. If you expected some, check the pattern: types fully qualified, "
-                    + "$variables for the parts that vary.");
+            return noMatches("No matches.", invalid);
         }
         StringBuilder sb = new StringBuilder();
         sb.append(total).append(total == 1 ? " matching line" : " matching lines").append(" in ")
@@ -206,7 +227,7 @@ public final class ApplyRuleTool implements Tool {
     }
 
     private Result rewrite(String rule, List<FileObject> scope, List<FileObject> roots, boolean dryRun, int maxDiffLines,
-            List<String> allowOutside)
+            List<String> allowOutside, String invalid)
             throws IOException {
         Collection<? extends ModificationResult> results = TransformationSupport.create(rule).processAllProjects();
         Map<FileObject, String> before = new LinkedHashMap<>();
@@ -228,8 +249,7 @@ public final class ApplyRuleTool implements Tool {
             }
         }
         if (planned.isEmpty()) {
-            return Result.ok("No matches, nothing to change. If you expected some, check the pattern: types fully "
-                    + "qualified, $variables for the parts that vary, each rule ending with ;;");
+            return noMatches("No matches, nothing to change.", invalid);
         }
         Map<FileObject, String> after = planned;
         if (!dryRun) {
