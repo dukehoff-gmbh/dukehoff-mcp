@@ -91,7 +91,9 @@ public final class McpArgsProcessor implements ArgsProcessor {
         System.setOut(System.err);
 
         Workspace ws = new Workspace(dir);
-        List<Tool> tools = tools(ws);
+        // for tests: open the folder as usual, but let the tools work as inside an IDE, on the open projects
+        List<Tool> tools = tools("open-projects".equals(System.getProperty("dukehoffmcp.workspace"))
+                ? Workspace.ofOpenProjects() : ws);
         List<Tool> selected;
         try {
             // the persistent server selects per connection; a per-session server here

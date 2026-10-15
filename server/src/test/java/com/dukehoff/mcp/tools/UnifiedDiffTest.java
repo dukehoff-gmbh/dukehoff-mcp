@@ -35,6 +35,22 @@ public class UnifiedDiffTest {
     }
 
     @Test
+    public void absolutePathsGetNoPrefix() {
+        assertEquals("""
+                diff --git /p/A.java /p/B.java
+                rename from /p/A.java
+                rename to /p/B.java
+                --- /p/A.java
+                +++ /p/B.java
+                @@ -1,1 +1,1 @@
+                -class A {}
+                +class B {}
+                """, UnifiedDiff.diff("/p/A.java", "/p/B.java", "class A {}\n", "class B {}\n"));
+        assertEquals("diff --git C:\\p\\A.java C:\\p\\A.java\ndeleted file mode 100644\n",
+                UnifiedDiff.deletion("C:\\p\\A.java", ""));
+    }
+
+    @Test
     public void distantChangesGetSeparateHunks() {
         String before = "a\n1\n2\n3\n4\n5\n6\n7\n8\nb\n";
         String after = "A\n1\n2\n3\n4\n5\n6\n7\n8\nB\n";
