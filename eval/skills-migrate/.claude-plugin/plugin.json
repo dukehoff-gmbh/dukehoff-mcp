@@ -1,0 +1,5 @@
+{
+  "name": "java-migrations",
+  "version": "0.1.0",
+  "description": "Migrating and modernizing Java code with structural rules (NetBeans Jackpot) through the java MCP server (dukehoff-mcp): API and library upgrades, deprecated calls, package moves."
+}

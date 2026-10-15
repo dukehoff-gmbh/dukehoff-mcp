@@ -797,3 +797,105 @@ A first try of this run is discarded: `stop_after.py` crashed on `permission_den
 `message` is a string), which closed the pipe but left each session running orphaned; the sessions
 kept editing the workspace and started servers while later sessions ran. The script now ends the
 session's process group whenever it exits, also on an error.
+
+## 2026-10-15: a JUnit 4 -> 5 migration (`eval/migrate-tasks`)
+
+Question: does `apply_rule` (NetBeans Jackpot rules) help with a migration of many call sites, and
+does a skill with rule documentation help writing the rules? Fixture (`make-fixture.py`): a Maven
+project with 30 JUnit 4 test classes, 92 tests and 354 assertions, built to be hard as text edits:
+the message moves from the first to the last argument, with nested calls and string literals
+containing commas, calls over several lines, `delta` overloads, three `String` arguments (a message
+left first still compiles in JUnit 5 and then fails), static, explicit and qualified imports,
+`@Before`/`@BeforeClass`/`@After`/`@Ignore`, `@Test(expected = ...)`. `check.sh`: no JUnit 4 left in
+code or `pom.xml`, as many assertions as before, all 92 tests run (4 skipped) and pass offline; a
+correct migration passes, one message left first fails. The prompt asks for the migration without
+naming a tool; `run.sh --allow python3,sed,perl,awk` lets every mode script it. Skill:
+`eval/skills-migrate` (workflow, syntax, one rule per overload, typed variables, examples; not the
+JUnit rules). Claude Code 2.x, default tool deferral.
+
+| model | mode | correct | turns | cost (USD) | our tools / skill used |
+|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline | 3/3 | 18.0 ± 8.5 | 0.230 | - |
+| Sonnet 5.5 | netbeans | 3/3 | 21.7 ± 7.4 | 0.250 | 0/3 |
+| Sonnet 5.5 | netbeans + skill | 3/3 | 19.7 ± 2.5 | 0.246 | 0/3, 0/3 |
+| Haiku 4.5 | baseline | 3/3 | 51.0 ± 11.8 | 0.042 | - |
+| Haiku 4.5 | netbeans | 3/3 | 29.3 ± 11.8 | 0.034 | 0/3 |
+| Haiku 4.5 | netbeans + skill | 3/3 | 26.3 ± 7.1 | 0.030 | 0/3, 0/3 |
+
+- All 18 sessions are correct, and none used `apply_rule` or the skill (both loaded: the skill is in
+  the session's skill list, the tools in its tool list; no `ToolSearch`, no `Skill` call). The Haiku
+  difference between baseline and netbeans is noise (no tool of ours was called).
+- Every session wrote a migration script (Python with a small argument splitter that respects
+  parentheses and string literals, or `sed`/`perl`) and got it right in one go. For JUnit the number
+  of arguments decides the meaning (three without a `delta`: the message is first), so a script needs
+  no types: the premise that text edits fail here was wrong.
+- Writing the rules works: a rule set with one rule per overload migrates all 354 assertions,
+  imports and annotations (`@Test(expected)`, old imports and `pom.xml` by hand), and passes the
+  check. Finding: untyped variables (`org.junit.Assert.assertEquals($e, $a)`) miss statically
+  imported calls of the `Object` overloads; with `:: $e instanceof java.lang.Object && $a instanceof
+  java.lang.Object` they match. The skill says to type every variable.
+- Next: the same task with an explicit instruction to use `apply_rule` (does it save tokens or time,
+  is a correct result easier to get), and a migration whose meaning depends on types a script cannot
+  see.
+
+### Instructed to use `apply_rule` (2026-10-15, task `02-junit5-rules`)
+
+The same migration with the instruction to do the code changes with `apply_rule` (hand edits only for
+what rules cannot express, and `pom.xml`); scripts stay allowed. 12 sessions; the baseline is the
+scripted one above.
+
+| model | mode | correct | turns | cost (USD) | seconds | Edit calls | apply_rule calls |
+|---|---|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline (scripted, above) | 3/3 | 18.0 | 0.230 | 74 | 4 | - |
+| Sonnet 5.5 | instructed | 3/3 | 115.0 ± 29.2 | 0.784 | 232 | 197 | 38 |
+| Sonnet 5.5 | instructed + skill | 3/3 | 25.0 ± 1.7 | 0.282 | 77 | 12 | 15 |
+| Haiku 4.5 | baseline (scripted, above) | 3/3 | 51.0 | 0.042 | 152 | 14 | - |
+| Haiku 4.5 | instructed | 3/3 | 95.0 ± 18.5 | 0.330 | 326 | 60 | 42 |
+| Haiku 4.5 | instructed + skill | 3/3 | 87.3 ± 34.6 | 0.120 | 219 | 111 | 25 |
+
+- All correct. With the skill, Sonnet typed every variable and migrated all assertions in one call:
+  as cheap and fast as scripting, not cheaper. Haiku is slower and dearer with rules in both modes.
+- Without the skill, sessions wrote untyped rules, which miss the statically imported `Object`
+  overloads; a later search said "No matches" although calls were left, and the sessions fixed them
+  by hand (Sonnet: 197 edits). Fix in the tool: tell agents to type every variable.
+- Almost every session first tried annotation patterns (`@org.junit.Test(expected = $e) public void
+  $m() {...}`) and got "The rule does not parse as Java" from our syntax check, without a hint that
+  `org.junit.Test => org.junit.jupiter.api.Test` rewrites the type and attributes need hand edits.
+- For JUnit the argument count decides the meaning, so scripts do as well as rules. Still open: a
+  migration whose meaning depends on types a script cannot see.
+
+## 2026-10-15: modernization with structural rules (`eval/migrate-tasks/03`, `04`)
+
+The JUnit task needs no types (the argument count decides), so it cannot show what rules add. This
+one does: `make-modern-fixture.py` writes 24 classes with 144 places, 84 to modernize and 60
+look-alikes that must stay: try/finally that only closes -> try-with-resources (decoys: a `finally`
+that does more; `Session`, which has `close()` but is no `AutoCloseable`); iterator loop -> for-each
+(decoy: `it.remove()`); `m.containsKey(k) ? m.get(k) : d` -> `getOrDefault` (decoys: different keys,
+`Registry`, which has `containsKey`/`get` but is no `Map`); `size() == 0` -> `isEmpty()` (decoy:
+`Bag`, no collection). Types are mostly behind getters (`order.lines()` vs. `order.bag()`). 144
+tests check behaviour; `check-modernize.py` checks every place, the unchanged support classes and
+the tests. Verified: four rules in one `apply_rule` call solve it (84 changed, 60 kept); `sed` on
+`size() == 0` breaks 12 decoys and the build. Task 03 names no tool (scripts allowed), 04 instructs
+to use `apply_rule`. The server already had the fixes from the JUnit runs (typed-argument advice in
+the description, the javac syntax check only explains a rule that matches nothing). The skill gained
+multi-statement patterns, repeated variables and `referencedIn`, with its own examples.
+
+| model | mode | correct | turns | cost (USD) | seconds |
+|---|---|---|---|---|---|
+| Sonnet 5.5 | baseline (03, scripts) | 3/3 | 18.3 ± 4.9 | 0.200 | 57 |
+| Sonnet 5.5 | `apply_rule` instructed (04) | 3/3 | 11.0 ± 2.6 | 0.155 | 35 |
+| Sonnet 5.5 | `apply_rule` + skill (04) | 3/3 | 21.0 ± 12.3 | 0.190 | 53 |
+| Haiku 4.5 | baseline (03, scripts) | 3/3 | 57.0 ± 56.5 | 0.034 | 123 |
+| Haiku 4.5 | `apply_rule` instructed (04) | 3/3 | 37.7 ± 16.2 | 0.032 | 111 |
+| Haiku 4.5 | `apply_rule` + skill (04) | 3/3 | 38.0 ± 15.7 | 0.029 | 106 |
+
+- All 18 correct; the scripted sessions found the look-alikes by trial and error: 3-4 builds and
+  4-8 script runs per Sonnet session. With `apply_rule`, Sonnet needed two calls (a dry run of four
+  rules, then the same applied): 40% fewer turns, 23% lower cost, 39% less time than scripting.
+- Haiku gains less (34% fewer turns, about the same cost, 10% less time) but varies far less: one
+  scripted session fell back to editing by hand (104 edits across the three).
+- The skill did not help Sonnet here (an extra search step, hand edits in one session); for Haiku
+  it is a wash. The tool description now carries what mattered (typed arguments, the structural
+  features), which may be why.
+- Together with the JUnit runs: rules pay where the meaning depends on structure and types (decoys,
+  several statements, the same expression twice), and are on par where text decides.
