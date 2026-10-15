@@ -57,6 +57,8 @@ public final class Launcher {
             "  --config <client>  print the configuration that registers this server with a client",
             "                     (claude, copilot, vscode, cursor, codex, omp), then exit",
             "  --version          print the version, then exit",
+            "  --ide              use the NetBeans IDE that runs with the Dukehoff MCP plugin: its open projects",
+            "                     in the workspace folder, its index; starts nothing",
             "  --connect <socket> relay stdio to a server already listening on this socket (the one inside",
             "                     the Apache NetBeans extension for VS Code) for the workspace; starts nothing",
             "  --connect-file <f> the same with the socket path read from a file, waiting up to 3 minutes",
@@ -111,6 +113,7 @@ public final class Launcher {
         String allowWrites;
         String config;
         boolean version;
+        boolean ide;
         Path connect;
         Path connectFile;
         Path workspace;
@@ -132,6 +135,7 @@ public final class Launcher {
                 case "--allow-writes" -> o.allowWrites = value(args, ++i, a);
                 case "--config" -> o.config = value(args, ++i, "--config needs a client: claude, copilot, vscode, cursor, codex or omp;");
                 case "--version" -> o.version = true;
+                case "--ide" -> o.ide = true;
                 case "--connect" -> o.connect = Paths.get(value(args, ++i, a));
                 case "--connect-file" -> o.connectFile = Paths.get(value(args, ++i, a));
                 case "-h", "--help" -> throw new UsageException("\n" + USAGE);
@@ -181,6 +185,13 @@ public final class Launcher {
         Map<String, String> env = System.getenv();
         Options o = parse(args, env);
         Path home = jar.toAbsolutePath().getParent().getParent();
+        if (o.ide && o.config == null) {
+            // the server runs inside the IDE; the tools see its projects in the workspace folder
+            Path socket = IdeRegistry.find(IdeRegistry.dir(env)).orElseThrow(() -> new UsageException(
+                    "no running NetBeans IDE with the Dukehoff MCP plugin found (in " + IdeRegistry.dir(env) + ")"));
+            Path workspace = (o.workspace != null ? o.workspace : Paths.get("")).toAbsolutePath().normalize();
+            return new Proxy(System.err).allowingWrites(o.allowWrites).runConnected(socket, o.tools, workspace.toString());
+        }
         if (o.connect != null || o.connectFile != null) {
             // the server runs elsewhere (inside the VS Code extension's NetBeans): no runtime, no JDK needed
             String workspace = o.workspace == null ? null : o.workspace.toAbsolutePath().normalize().toString();
@@ -195,7 +206,7 @@ public final class Launcher {
         }
         Path jdk = findJdk(o.jdk, env);
         if (o.config != null) {
-            System.out.print(config(o.config, jdk.resolve("bin").resolve("java" + EXE), jar.toAbsolutePath(), o.tools, o.allowWrites));
+            System.out.print(config(o.config, jdk.resolve("bin").resolve("java" + EXE), jar.toAbsolutePath(), o.tools, o.allowWrites, o.ide));
             return 0;
         }
         if (!Files.isDirectory(home.resolve("platform").resolve("lib"))) {
@@ -470,11 +481,21 @@ public final class Launcher {
      * @param allowWrites folders the tools may write to besides the workspace ({@code --allow-writes}), or null
      */
     static String config(String client, Path java, Path jar, String tools, String allowWrites) throws UsageException {
+        return config(client, java, jar, tools, allowWrites, false);
+    }
+
+    /**
+     * The configuration that registers this server with a client.
+     *
+     * @param ide whether the registration uses the running NetBeans IDE ({@code --ide})
+     */
+    static String config(String client, Path java, Path jar, String tools, String allowWrites, boolean ide) throws UsageException {
         String j = json(java.toString());
         String a = json(jar.toString());
-        String t = (tools == null ? "" : ", \"--tools\", \"" + json(tools) + "\"")
+        String t = (ide ? ", \"--ide\"" : "")
+                + (tools == null ? "" : ", \"--tools\", \"" + json(tools) + "\"")
                 + (allowWrites == null ? "" : ", \"--allow-writes\", \"" + json(allowWrites) + "\"");
-        String cli = (tools == null ? "" : " --tools " + tools)
+        String cli = (ide ? " --ide" : "") + (tools == null ? "" : " --tools " + tools)
                 + (allowWrites == null ? "" : " --allow-writes \"" + allowWrites + "\"");
         return switch (client) {
             case "claude" -> "# Claude Code, for all your projects:\n"
