@@ -137,7 +137,14 @@ class Changes implements vscode.TextDocumentContentProvider, vscode.Disposable {
                     void this.show(change);
                 }
             } catch (e) {
-                this.log.appendLine(`asking for refactoring changes failed: ${e instanceof Error ? e.message : String(e)}`);
+                const message = e instanceof Error ? e.message : String(e);
+                if (message.includes('not found')) {
+                    // NetBeans runs a module older than this extension (installed while it ran)
+                    this.log.appendLine(`refactoring review is off: NetBeans does not know ${CHANGES} (${message}); `
+                        + 'reload the window to start NetBeans with this extension\'s module');
+                    return;
+                }
+                this.log.appendLine(`asking for refactoring changes failed: ${message}`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
             }
         }
