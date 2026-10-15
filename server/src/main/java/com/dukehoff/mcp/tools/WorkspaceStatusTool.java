@@ -59,7 +59,7 @@ public final class WorkspaceStatusTool implements Tool {
             workspace.awaitReady(wait);
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("Workspace: ").append(workspace.getRoot()).append('\n');
+        sb.append("Workspace: ").append(workspace.describe()).append('\n');
         sb.append("State: ").append(workspace.getPhase())
                 .append(workspace.isIndexing() ? " (indexing in progress)" : "").append('\n');
         List<Project> projects = workspace.getProjects();
