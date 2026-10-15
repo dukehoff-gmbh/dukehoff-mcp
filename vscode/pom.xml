@@ -53,6 +53,10 @@
                                         <include name="update_tracking/com-dukehoff-mcp.xml"/>
                                     </fileset>
                                 </copy>
+                                <!-- NetBeans keeps a cache of each cluster's modules and checks it against this
+                                     file's time: without it nbcode kept running the module of an earlier install
+                                     of the same extension version -->
+                                <touch file="${project.basedir}/nbcode/dukehoffmcp/.lastModified"/>
                                 <copy file="${project.basedir}/../runtime/src/main/licenses/licenses/MIT-lombok"
                                       tofile="${project.basedir}/nbcode/dukehoffmcp/modules/ext/dukehoff-mcp/LICENSE-lombok"/>
                                 <copy file="${project.basedir}/../LICENSE" todir="${project.basedir}"/>
