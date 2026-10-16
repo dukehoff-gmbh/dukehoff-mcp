@@ -33,4 +33,18 @@ public class ApplyRuleToolTest {
         assertNotNull(message);
         assertTrue(message, message.contains("$a.bar(("));
     }
+
+    @Test
+    public void everyPackLoadsAndParses() throws Exception {
+        for (String name : ApplyRuleTool.PACKS.keySet()) {
+            ApplyRuleTool.Pack pack = ApplyRuleTool.Pack.load(name);
+            assertNotNull(name, pack);
+            assertTrue(name + " has rules", pack.rules().split(";;").length > 5);
+            assertTrue(name + " has notes", !pack.notes().isEmpty());
+            assertTrue(name + ": no comment left in the rules", !pack.rules().contains("#"));
+            assertNull(name, ApplyRuleTool.checkSyntax(pack.rules()));
+        }
+        assertNull(ApplyRuleTool.Pack.load("../junit5"));
+        assertNull(ApplyRuleTool.Pack.load("nonsense"));
+    }
 }
