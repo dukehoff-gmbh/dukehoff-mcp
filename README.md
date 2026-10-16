@@ -219,6 +219,27 @@ tools see the projects open in NetBeans there, name files relative to it and wri
 no project there is open, the tools say so; open it in NetBeans. NetBeans announces the server in
 `~/.dukehoff-mcp/ide/`; `-J-Ddukehoffmcp.ide.server=false` (in `etc/netbeans.conf`) turns it off.
 
+### Telling the agent when to use the tools
+
+Agents pick tools by what they read, and project instructions weigh most. A short section in the
+project's `CLAUDE.md` (Claude Code) or `AGENTS.md` (Copilot, Codex, Cursor and others) makes them use
+the tools where they pay. In our evaluation, with this section in `CLAUDE.md`, Claude Code used
+`apply_rule` for a modernization on its own in 3 of 3 sessions (0 of 3 without), with a third fewer
+turns; the VS Code extension offers to add it (command "Add Java tool hints to AGENTS.md").
+
+```markdown
+## Java code
+
+To rename, move or delete Java code or change a method's signature, use the Java MCP tools
+(`rename`, `move`, `change_signature`, `safe_delete`) instead of editing files: one call updates
+every reference, also in other modules, and checks that everything still compiles.
+To find who calls or uses a method, field or class, use `find_usages`.
+For the same kind of change at many places (migrations, modernizations, replacing an API), use
+`apply_rule`: structural rewrite rules that check types and match whole statements, not text.
+Before calling a method of the JDK or a dependency whose exact signature you are unsure of, look it
+up with `outline`.
+```
+
 ### Choosing the tools
 
 Clients limit the number of tools, and every tool description costs context in each session. A
