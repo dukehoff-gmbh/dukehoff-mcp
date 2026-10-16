@@ -1,0 +1,23 @@
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+# Java modernization: try-with-resources, for-each, getOrDefault, isEmpty, valueOf.
+# Lines starting with #! are shown with the result.
+#! Check the build afterwards. Not covered: anonymous classes to lambdas (NetBeans' own hint does that), loops that
+#! index into lists, and resources closed in a finally block that does more than close them (kept on purpose).
+$T $r = $init; try { $body$; } finally { $r.close(); } :: $r instanceof java.lang.AutoCloseable => try ($T $r = $init) { $body$; } ;;
+for (java.util.Iterator<$T> $it = $c.iterator(); $it.hasNext(); ) { $T $e = $it.next(); $body$; } :: !referencedIn($it, $body$) => for ($T $e : $c) { $body$; } ;;
+$m.containsKey($k) ? $m.get($k) : $d :: $m instanceof java.util.Map => $m.getOrDefault($k, $d) ;;
+$c.size() == 0 :: $c instanceof java.util.Collection => $c.isEmpty() ;;
+$c.size() != 0 :: $c instanceof java.util.Collection => !$c.isEmpty() ;;
+$c.size() > 0 :: $c instanceof java.util.Collection => !$c.isEmpty() ;;
+$m.size() == 0 :: $m instanceof java.util.Map => $m.isEmpty() ;;
+$s.length() == 0 :: $s instanceof java.lang.String => $s.isEmpty() ;;
+$s.equals("") :: $s instanceof java.lang.String => $s.isEmpty() ;;
+new java.lang.Integer($v) :: $v instanceof int => java.lang.Integer.valueOf($v) ;;
+new java.lang.Long($v) :: $v instanceof long => java.lang.Long.valueOf($v) ;;
+new java.lang.Double($v) :: $v instanceof double => java.lang.Double.valueOf($v) ;;
+new java.lang.Boolean($v) :: $v instanceof boolean => java.lang.Boolean.valueOf($v) ;;
+new java.lang.Integer($v) :: $v instanceof java.lang.String => java.lang.Integer.valueOf($v) ;;
+new java.lang.Long($v) :: $v instanceof java.lang.String => java.lang.Long.valueOf($v) ;;

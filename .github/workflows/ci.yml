@@ -66,6 +66,13 @@ jobs:
         env:
           JDK_HOME: ${{ env.JAVA_HOME }}
 
+      # the rule packs of apply_rule on the migration fixtures of eval/migrate-tasks
+      - name: Rule packs test
+        if: runner.os != 'Windows'
+        run: python3 tests/smoke/rule-packs.py runtime/target/dukehoffmcp/bin/dukehoff-mcp
+        env:
+          JDK_HOME: ${{ env.JAVA_HOME }}
+
       # the same checks on Windows, through the Java launcher (java -jar, as Windows clients start it)
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
