@@ -27,6 +27,8 @@ To rename, move or delete Java code or change a method's signature, use the Java
 (\`rename\`, \`move\`, \`change_signature\`, \`safe_delete\`) instead of editing files: one call updates
 every reference, also in other modules, and checks that everything still compiles.
 To find who calls or uses a method, field or class, use \`find_usages\`.
+For the same kind of change at many places (migrations, modernizations, replacing an API), use
+\`apply_rule\`: structural rewrite rules that check types and match whole statements, not text.
 Before calling a method of the JDK or a dependency whose exact signature you are unsure of, look it
 up with \`outline\`.
 ${END}
