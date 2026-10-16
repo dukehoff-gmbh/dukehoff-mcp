@@ -49,8 +49,10 @@ setting `dukehoffMcp.allowedWritePaths` (relative paths are relative to the work
 ## Help agents pick the tools
 
 Agents choose tools by what they read. A short section in the project's `AGENTS.md` (read by Copilot,
-Codex, Cursor and others) tells them to rename, move or change signatures with the tools and to look
-up callers with `find_usages`. The command **Dukehoff MCP: Add Java tool hints to AGENTS.md** shows
+Codex, Cursor and others) tells them to rename, move or change signatures with the tools, to look
+up callers with `find_usages` and to do migrations with `apply_rule`. In our evaluation such a
+section made agents pick `apply_rule` for a modernization on their own (3 of 3 sessions, none
+without it), with a third fewer turns. The command **Dukehoff MCP: Add Java tool hints to AGENTS.md** shows
 the section as a diff and writes it only when you confirm; running it again updates the section
 instead of adding another. The extension suggests it once per workspace.
 
