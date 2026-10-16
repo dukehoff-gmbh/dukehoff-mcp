@@ -1,0 +1,67 @@
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+# JUnit 4 to JUnit 5: assertions (message last), assertThat to Hamcrest, annotations.
+# Lines starting with #! are shown with the result.
+#! Left for hand edits (rules cannot express them):
+#! - @Test(expected = X.class): drop the attribute, wrap the statement in assertThrows(X.class, () -> ...).
+#! - @Test(timeout = ...): @Timeout or assertTimeout; @Rule/@ClassRule: TemporaryFolder -> @TempDir, ExpectedException -> assertThrows, others -> extensions; @RunWith -> @ExtendWith.
+#! - Remove the now unused org.junit imports; in the build, replace junit:junit with org.junit.jupiter:junit-jupiter (and the vintage engine, if any).
+#! - assertThat now comes from org.hamcrest.MatcherAssert: the project needs hamcrest as a test dependency.
+org.junit.Assert.assertEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof long && $a instanceof long => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $m) ;;
+org.junit.Assert.assertEquals($e, $a) :: $e instanceof long && $a instanceof long => org.junit.jupiter.api.Assertions.assertEquals($e, $a) ;;
+org.junit.Assert.assertEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof double && $a instanceof double && $d instanceof double => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertEquals($e, $a, $d) :: $e instanceof double && $a instanceof double && $d instanceof double => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $d) ;;
+org.junit.Assert.assertEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof float && $a instanceof float && $d instanceof float => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertEquals($e, $a, $d) :: $e instanceof float && $a instanceof float && $d instanceof float => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $d) ;;
+org.junit.Assert.assertEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertEquals($e, $a, $m) ;;
+org.junit.Assert.assertEquals($e, $a) :: $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertEquals($e, $a) ;;
+org.junit.Assert.assertNotEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof long && $a instanceof long => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $m) ;;
+org.junit.Assert.assertNotEquals($e, $a) :: $e instanceof long && $a instanceof long => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a) ;;
+org.junit.Assert.assertNotEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof double && $a instanceof double && $d instanceof double => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertNotEquals($e, $a, $d) :: $e instanceof double && $a instanceof double && $d instanceof double => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $d) ;;
+org.junit.Assert.assertNotEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof float && $a instanceof float && $d instanceof float => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertNotEquals($e, $a, $d) :: $e instanceof float && $a instanceof float && $d instanceof float => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $d) ;;
+org.junit.Assert.assertNotEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a, $m) ;;
+org.junit.Assert.assertNotEquals($e, $a) :: $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotEquals($e, $a) ;;
+org.junit.Assert.assertTrue($m, $c) :: $m instanceof java.lang.String && $c instanceof boolean => org.junit.jupiter.api.Assertions.assertTrue($c, $m) ;;
+org.junit.Assert.assertTrue($c) :: $c instanceof boolean => org.junit.jupiter.api.Assertions.assertTrue($c) ;;
+org.junit.Assert.assertFalse($m, $c) :: $m instanceof java.lang.String && $c instanceof boolean => org.junit.jupiter.api.Assertions.assertFalse($c, $m) ;;
+org.junit.Assert.assertFalse($c) :: $c instanceof boolean => org.junit.jupiter.api.Assertions.assertFalse($c) ;;
+org.junit.Assert.assertNull($m, $o) :: $m instanceof java.lang.String && $o instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNull($o, $m) ;;
+org.junit.Assert.assertNull($o) :: $o instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNull($o) ;;
+org.junit.Assert.assertNotNull($m, $o) :: $m instanceof java.lang.String && $o instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotNull($o, $m) ;;
+org.junit.Assert.assertNotNull($o) :: $o instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotNull($o) ;;
+org.junit.Assert.assertSame($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertSame($e, $a, $m) ;;
+org.junit.Assert.assertSame($e, $a) :: $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertSame($e, $a) ;;
+org.junit.Assert.assertNotSame($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotSame($e, $a, $m) ;;
+org.junit.Assert.assertNotSame($e, $a) :: $e instanceof java.lang.Object && $a instanceof java.lang.Object => org.junit.jupiter.api.Assertions.assertNotSame($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof int[] && $a instanceof int[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof int[] && $a instanceof int[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof long[] && $a instanceof long[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof long[] && $a instanceof long[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof short[] && $a instanceof short[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof short[] && $a instanceof short[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof byte[] && $a instanceof byte[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof byte[] && $a instanceof byte[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof char[] && $a instanceof char[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof char[] && $a instanceof char[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof boolean[] && $a instanceof boolean[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof boolean[] && $a instanceof boolean[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a) :: $m instanceof java.lang.String && $e instanceof java.lang.Object[] && $a instanceof java.lang.Object[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a) :: $e instanceof java.lang.Object[] && $a instanceof java.lang.Object[] => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof double[] && $a instanceof double[] && $d instanceof double => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a, $d) :: $e instanceof double[] && $a instanceof double[] && $d instanceof double => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $d) ;;
+org.junit.Assert.assertArrayEquals($m, $e, $a, $d) :: $m instanceof java.lang.String && $e instanceof float[] && $a instanceof float[] && $d instanceof float => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $d, $m) ;;
+org.junit.Assert.assertArrayEquals($e, $a, $d) :: $e instanceof float[] && $a instanceof float[] && $d instanceof float => org.junit.jupiter.api.Assertions.assertArrayEquals($e, $a, $d) ;;
+org.junit.Assert.fail($m) :: $m instanceof java.lang.String => org.junit.jupiter.api.Assertions.fail($m) ;;
+org.junit.Assert.fail() => org.junit.jupiter.api.Assertions.fail() ;;
+org.junit.Assert.assertThat($m, $a, $x) :: $m instanceof java.lang.String && $a instanceof java.lang.Object && $x instanceof org.hamcrest.Matcher => org.hamcrest.MatcherAssert.assertThat($m, $a, $x) ;;
+org.junit.Assert.assertThat($a, $x) :: $a instanceof java.lang.Object && $x instanceof org.hamcrest.Matcher => org.hamcrest.MatcherAssert.assertThat($a, $x) ;;
+org.junit.Test => org.junit.jupiter.api.Test ;;
+org.junit.Before => org.junit.jupiter.api.BeforeEach ;;
+org.junit.After => org.junit.jupiter.api.AfterEach ;;
+org.junit.BeforeClass => org.junit.jupiter.api.BeforeAll ;;
+org.junit.AfterClass => org.junit.jupiter.api.AfterAll ;;
+org.junit.Ignore => org.junit.jupiter.api.Disabled ;;

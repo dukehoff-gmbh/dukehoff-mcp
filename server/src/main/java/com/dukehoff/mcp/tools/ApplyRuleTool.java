@@ -83,6 +83,9 @@ public final class ApplyRuleTool implements Tool {
                 + "  new java.lang.Integer($v) => java.lang.Integer.valueOf($v) ;;\n"
                 + "  $c.size() == 0 :: $c instanceof java.util.Collection => $c.isEmpty() ;;\n"
                 + "  java.util.Objects.equals($a, $b) ;;   (search only)\n"
+                + "Packs, tested rule sets, instead of a rule: " + String.join("; ", PACKS.entrySet().stream()
+                        .map(e -> e.getKey() + " (" + e.getValue() + ")").toList())
+                + ". Try a pack with dry_run first; the result lists what is left for hand edits.\n"
                 + "Search mode checks the pattern and type conditions only. Output: matches as 'line: source "
                 + "line' grouped by file, or a unified diff of the changes.";
     }
@@ -98,6 +101,8 @@ public final class ApplyRuleTool implements Tool {
                 "type", "object",
                 "properties", Json.obj(
                         "rule", Json.obj("type", "string", "description", "One or more rules, each ending with ;;"),
+                        "pack", Json.obj("type", "string", "enum", List.copyOf(PACKS.keySet()),
+                                "description", "A tested rule set to apply instead of 'rule'"),
                         "paths", Json.obj("type", "array", "items", Json.obj("type", "string"),
                                 "description", "Limit to these folders or files (relative to the workspace); default: everything"),
                         "dry_run", Json.obj("type", "boolean",
@@ -107,15 +112,65 @@ public final class ApplyRuleTool implements Tool {
                         RefactoringRunner.ALLOW_OUTSIDE, RefactoringRunner.ALLOW_OUTSIDE_SCHEMA,
                         "max_diff_lines", Json.obj("type", "integer",
                                 "description", "Rewrite: maximum diff lines returned, default "
-                                + RefactoringRunner.DEFAULT_MAX_DIFF_LINES)),
-                "required", List.of("rule"));
+                                + RefactoringRunner.DEFAULT_MAX_DIFF_LINES)));
+    }
+
+    /** The rule packs (resources packs/<name>.rules) and what each covers. */
+    static final Map<String, String> PACKS = new LinkedHashMap<>();
+
+    static {
+        PACKS.put("junit5", "JUnit 4 to 5: assertions with the message moved last, assertThat to Hamcrest, annotations");
+        PACKS.put("modernize", "try-with-resources, for-each, getOrDefault, isEmpty, valueOf instead of new Integer(...)");
+    }
+
+    /**
+     * A pack's rules and its notes for the result: lines starting with "#!" are notes, other lines
+     * starting with "#" comments.
+     */
+    record Pack(String rules, String notes) {
+
+        static Pack load(String name) throws IOException {
+            if (!PACKS.containsKey(name)) {
+                return null;
+            }
+            try (java.io.InputStream in = ApplyRuleTool.class.getResourceAsStream("packs/" + name + ".rules")) {
+                if (in == null) {
+                    return null;
+                }
+                StringBuilder rules = new StringBuilder();
+                StringBuilder notes = new StringBuilder();
+                for (String line : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
+                    if (line.startsWith("#!")) {
+                        notes.append(line.substring(2).strip()).append('\n');
+                    } else if (!line.startsWith("#") && !line.isBlank()) {
+                        rules.append(line).append('\n');
+                    }
+                }
+                return new Pack(rules.toString().strip(), notes.toString());
+            }
+        }
     }
 
     @Override
     public Result call(Map<?, ?> arguments) throws Exception {
-        String rule = Json.string(arguments, "rule");
+        String packName = Json.string(arguments, "pack");
+        if (packName == null) {
+            return call(arguments, Json.string(arguments, "rule"));
+        }
+        if (Json.string(arguments, "rule") != null) {
+            return Result.error("Give either 'rule' or 'pack', not both.");
+        }
+        Pack pack = Pack.load(packName);
+        if (pack == null) {
+            return Result.error("Unknown pack '" + packName + "'. Packs: " + String.join(", ", PACKS.keySet()));
+        }
+        Result r = call(arguments, pack.rules());
+        return r.error() || pack.notes().isEmpty() ? r : Result.ok(r.text() + "\n" + pack.notes());
+    }
+
+    private Result call(Map<?, ?> arguments, String rule) throws Exception {
         if (rule == null) {
-            return Result.error("'rule' is required");
+            return Result.error("'rule' (or 'pack') is required");
         }
         // without ";;" the text is taken as a bare pattern and conditions after "::" are not understood
         if (!rule.endsWith(";;")) {
