@@ -899,3 +899,22 @@ multi-statement patterns, repeated variables and `referencedIn`, with its own ex
   features), which may be why.
 - Together with the JUnit runs: rules pay where the meaning depends on structure and types (decoys,
   several statements, the same expression twice), and are on par where text decides.
+
+### Unprompted, with the hints in CLAUDE.md (2026-10-15, task `03-modernize`)
+
+The modernization task without naming a tool, the server offered (v0.6.0), Sonnet 5.5, 3 sessions
+each: the fixture as it is, and a copy with the Java tool section in `CLAUDE.md` (what Claude Code
+reads; the VS Code extension writes the same section to `AGENTS.md`), extended by one line: "For the
+same kind of change at many places (migrations, modernizations, replacing an API), use `apply_rule`:
+structural rewrite rules that check types and match whole statements, not text."
+
+| hints | correct | used `apply_rule` | turns | cost (USD) | seconds in the model |
+|---|---|---|---|---|---|
+| none | 3/3 | 0/3 | 20.0 ± 4.6 | 0.215 | 60 |
+| `CLAUDE.md` section | 3/3 | 3/3 | 13.3 ± 1.5 | 0.190 | 32 |
+
+- With the section every session loaded the tool (one `ToolSearch`) and rewrote with 2-4
+  `apply_rule` calls; without it every session scripted. A third fewer turns, 12% lower cost, about
+  half the time, close to the sessions instructed in the prompt (11.0 turns, 0.155 USD).
+- So a line in the project instructions is enough to get the tool used where it pays; the
+  extension's section and the README now carry it.
