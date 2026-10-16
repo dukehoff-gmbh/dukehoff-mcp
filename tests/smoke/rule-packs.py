@@ -104,8 +104,15 @@ for root, _, files in os.walk(os.path.join(junit, "src", "test")):
             if re.search(r"(^|[^.\w])assert[A-Z]\w*\(", line) and "import" not in line:
                 left.append(f + ": " + line.strip())
 expect(not left, f"junit5: no JUnit 4 assertion left ({len(left)}: {left[:3]})")
-expected = sum(open(os.path.join(root, f)).read().count("@Test(expected") for root, _, files in os.walk(os.path.join(junit, "src", "test")) for f in files)
-expect(expected == 3, f"junit5: the 3 @Test(expected = ...) are left for hand edits ({expected})")
+around = []
+for root, _, files in os.walk(os.path.join(junit, "src", "test")):
+    for f in files:
+        lines = open(os.path.join(root, f)).read().splitlines()
+        for i, line in enumerate(lines):
+            if "negativeRange" in line:
+                around.append(f + ": " + " | ".join(l.strip() for l in lines[max(0, i - 2):i + 2]))
+expected = sum(1 for a in around if "expected = IllegalArgumentException.class" in a)
+expect(expected == 3, f"junit5: the 3 expected = IllegalArgumentException.class are left for hand edits ({expected}): {around}")
 
 print("RULE-PACKS TEST " + ("FAILED: " + "; ".join(failures) if failures else "PASSED"))
 sys.exit(1 if failures else 0)
