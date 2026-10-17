@@ -121,6 +121,8 @@ public final class ApplyRuleTool implements Tool {
     static {
         PACKS.put("junit5", "JUnit 4 to 5: assertions with the message moved last, assertThat to Hamcrest, annotations");
         PACKS.put("modernize", "try-with-resources, for-each, getOrDefault, isEmpty, valueOf instead of new Integer(...)");
+        PACKS.put("jakarta", "javax to jakarta for Servlet, Persistence, Validation, Annotation, Inject, JAX-RS, Transaction; "
+                + "the JDK's own javax packages stay");
     }
 
     /**
@@ -178,7 +180,9 @@ public final class ApplyRuleTool implements Tool {
         }
         // Jackpot understands more than Java ($mods$, class members, annotations), so javac's view of the
         // rule only explains a rule that matches nothing or that Jackpot cannot read either
-        String invalid = checkSyntax(rule);
+        // javac takes a while per rule (hundreds in a pack): only when the message is needed
+        String rules = rule;
+        java.util.function.Supplier<String> invalid = () -> checkSyntax(rules);
         List<FileObject> roots;
         try {
             roots = workspace.awaitSourceRoots();
@@ -208,17 +212,19 @@ public final class ApplyRuleTool implements Tool {
                 RefactoringRunner.WRITES.unlock();
             }
         } catch (RuntimeException ex) {
-            if (invalid != null) {
-                return Result.error(invalid);
+            String message = invalid.get();
+            if (message != null) {
+                return Result.error(message);
             }
             throw ex;
         }
     }
 
     /** No matches: why, if javac cannot read the rule, else what is commonly missed. */
-    private static Result noMatches(String what, String invalid) {
-        if (invalid != null) {
-            return Result.error(what + " " + invalid);
+    private static Result noMatches(String what, java.util.function.Supplier<String> invalid) {
+        String message = invalid.get();
+        if (message != null) {
+            return Result.error(what + " " + message);
         }
         return Result.ok(what + " If you expected some, check the pattern: types fully qualified, $variables for "
                 + "the parts that vary, each rule ending with ;;. Calls of overloaded methods (also statically "
@@ -238,7 +244,7 @@ public final class ApplyRuleTool implements Tool {
         return false;
     }
 
-    private Result search(String rule, List<FileObject> scope, int limit, String invalid) {
+    private Result search(String rule, List<FileObject> scope, int limit, java.util.function.Supplier<String> invalid) {
         // file -> line -> source line (a line with several matches is listed once)
         Map<String, TreeMap<Integer, String>> byFile = Collections.synchronizedMap(new TreeMap<>());
         TransformationSupport.create(rule, (WorkingCopy wc, Occurrence occurrence) -> {
@@ -282,7 +288,7 @@ public final class ApplyRuleTool implements Tool {
     }
 
     private Result rewrite(String rule, List<FileObject> scope, List<FileObject> roots, boolean dryRun, int maxDiffLines,
-            List<String> allowOutside, String invalid)
+            List<String> allowOutside, java.util.function.Supplier<String> invalid)
             throws IOException {
         Collection<? extends ModificationResult> results = TransformationSupport.create(rule).processAllProjects();
         Map<FileObject, String> before = new LinkedHashMap<>();
