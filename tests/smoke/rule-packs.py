@@ -147,7 +147,9 @@ migrated = open(product).read()
 expect("jakarta.persistence.Entity" in migrated and "javax.persistence.Entity" not in migrated,
        "jakarta: the file with the wildcard import names the jakarta types (written fully qualified)")
 open(product, "w").write(migrated.replace("import javax.persistence.*;\n", ""))
-build = subprocess.run(["mvn", "-q", "-B", "-o", "clean", "compile"], cwd=jee, capture_output=True, text=True)
+# no "clean": its plugin is not in a fresh local repository, and this build is offline
+shutil.rmtree(os.path.join(jee, "target"), ignore_errors=True)
+build = subprocess.run(["mvn", "-q", "-B", "-o", "compile"], cwd=jee, capture_output=True, text=True)
 expect(build.returncode == 0, "jakarta: compiles against the jakarta APIs alone: "
        + " | ".join(l for l in build.stdout.splitlines() if "ERROR" in l)[:400])
 
