@@ -45,7 +45,9 @@ public final class FindUsagesTool implements Tool {
                 + "strings are not confused with real usages. Use this instead of grep before changing "
                 + "or removing an API. Symbol syntax: com.acme.Foo, com.acme.Foo#bar(String,int), "
                 + "com.acme.Foo#<init>(), com.acme.Foo#field. Parameter types may be omitted when the "
-                + "method name is not overloaded. Output: usages grouped by file as 'line: source line'.";
+                + "method name is not overloaded. Output: usages grouped by file as 'line: source line'; with "
+                + "group_by: \"caller\" grouped by the method, constructor or field that contains them, named "
+                + "in the same symbol syntax (who calls it, not only where).";
     }
 
     @Override
@@ -62,6 +64,9 @@ public final class FindUsagesTool implements Tool {
                                 "description", "Symbol, e.g. com.acme.OrderService#save(Order); the package may be left out when the type name is unique"),
                         "include_overriding", Json.obj("type", "boolean",
                                 "description", "For methods: also report usages of overriding methods. Default false."),
+                        "group_by", Json.obj("type", "string", "enum", List.of("file", "caller"),
+                                "description", "file (default): usages per file; caller: per method, constructor or "
+                                + "field that contains them, with its signature"),
                         "limit", Json.obj("type", "integer",
                                 "description", "Maximum usages listed, default " + DEFAULT_LIMIT)),
                 "required", List.of("symbol"));
@@ -81,6 +86,11 @@ public final class FindUsagesTool implements Tool {
         }
         boolean includeOverriding = Json.bool(arguments, "include_overriding", false);
         int limit = Json.integer(arguments, "limit", DEFAULT_LIMIT);
+        String groupBy = Json.string(arguments, "group_by");
+        if (groupBy != null && !groupBy.equals("file") && !groupBy.equals("caller")) {
+            return Result.error("group_by is 'file' or 'caller', not '" + groupBy + "'");
+        }
+        boolean byCaller = "caller".equals(groupBy);
 
         List<FileObject> roots;
         SymbolResolver.Resolved symbol;
@@ -92,9 +102,9 @@ public final class FindUsagesTool implements Tool {
         }
 
         if (symbol.generated()) {
-            WhereUsed.Found found = WhereUsed.render(workspace,
-                    GeneratedUsages.find(symbol.handle().getElementHandle(), symbol.simpleName(), roots),
-                    symbol.signature(), "usage", limit);
+            List<WhereUsed.Hit> hits = GeneratedUsages.find(symbol.handle().getElementHandle(), symbol.simpleName(), roots);
+            WhereUsed.Found found = byCaller ? WhereUsed.renderByCaller(workspace, hits, symbol.signature(), "usage", limit)
+                    : WhereUsed.render(workspace, hits, symbol.signature(), "usage", limit);
             return Result.ok(found.text() + COMPLETENESS);
         }
         WhereUsedQuery query = WhereUsed.query(symbol, roots);
@@ -102,7 +112,7 @@ public final class FindUsagesTool implements Tool {
         if (includeOverriding && symbol.kind() == ElementKind.METHOD) {
             query.putValue(WhereUsedQueryConstants.FIND_OVERRIDING_METHODS, true);
         }
-        WhereUsed.Found found = WhereUsed.find(workspace, query, symbol.signature(), "usage", limit, re -> true);
+        WhereUsed.Found found = WhereUsed.find(workspace, query, symbol.signature(), "usage", limit, re -> true, byCaller);
         return found.error() ? Result.error(found.text()) : Result.ok(found.text() + coverage(symbol, roots));
     }
 
