@@ -399,6 +399,13 @@ expect 'Checkout.java'
 expect 'addLine(sku, quantity)'
 expect_not 'addLine("pear")'
 
+# the same, grouped by the calling member (its signature, in the input syntax)
+tool find_usages '{"symbol":"com.acme.shop.Order#addLine(String,int)","group_by":"caller"}'
+expect '"isError":false'
+expect ' member'
+expect 'com.acme.shop.Checkout#'
+expect 'addLine(sku, quantity)'
+
 tool find_usages '{"symbol":"com.acme.shop.Order#addLine"}'
 expect '"isError":true'
 expect 'ambiguous'

@@ -16,7 +16,7 @@ directory, is `dukehoff-mcp`; agents see its tools under the server name `java`.
 | Tool | What it does |
 |---|---|
 | `find_symbol` | Types declared in the workspace by prefix, glob or partially qualified name, or members of them; with `include_libraries` also the JDK and the dependencies |
-| `find_usages` | Semantic references to a type, method, constructor or field (`WhereUsedQuery`) |
+| `find_usages` | Semantic references to a type, method, constructor or field (`WhereUsedQuery`); grouped by file, or with `group_by: "caller"` by the method, constructor or field that contains them, named by signature |
 | `find_implementations` | Subtypes of a type (all or direct) or overriding methods of a method; for a method also what it overrides or implements upwards, library declarations included |
 | `outline` | Members of a type or file: modifiers, canonical signatures, declared types, line numbers; for types of the JDK and the dependencies their public API (overloads, generics, deprecations) from the class files |
 | `diagnostics` | Compile errors (optionally warnings) of given files or the whole workspace, without a build |
@@ -233,11 +233,12 @@ turns; the VS Code extension offers to add it (command "Add Java tool hints to A
 To rename, move or delete Java code or change a method's signature, use the Java MCP tools
 (`rename`, `move`, `change_signature`, `safe_delete`) instead of editing files: one call updates
 every reference, also in other modules, and checks that everything still compiles.
-To find who calls or uses a method, field or class, use `find_usages`.
+To find who calls or uses a method, field or class, use `find_usages` (`group_by: "caller"` names the
+calling methods).
 For the same kind of change at many places (migrations, modernizations, replacing an API), use
 `apply_rule`: structural rewrite rules that check types and match whole statements, not text.
-For JUnit 4 to 5 or a Java modernization, start with `apply_rule` and `pack: "junit5"` or
-`pack: "modernize"` (a dry run first), then finish what the result lists by hand.
+For JUnit 4 to 5, javax to jakarta or a Java modernization, start with `apply_rule` and
+`pack: "junit5"`, `"jakarta"` or `"modernize"` (a dry run first), then finish what the result lists by hand.
 Before calling a method of the JDK or a dependency whose exact signature you are unsure of, look it
 up with `outline`.
 ```
