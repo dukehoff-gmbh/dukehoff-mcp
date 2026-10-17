@@ -114,5 +114,44 @@ for root, _, files in os.walk(os.path.join(junit, "src", "test")):
 expected = sum(1 for a in around if "expected = IllegalArgumentException.class" in a)
 expect(expected == 3, f"junit5: the 3 expected = IllegalArgumentException.class are left for hand edits ({expected}): {around}")
 
+subprocess.run([sys.executable, os.path.join(evals, "make-jakarta-fixture.py"), work], check=True, capture_output=True)
+jee = os.path.join(work, "javaee-project")
+build = subprocess.run(["mvn", "-q", "-B", "compile"], cwd=jee, capture_output=True, text=True)
+expect(build.returncode == 0, "javaee-project compiles before the pack")
+s = Session(jee)
+error, text = s.tool("apply_rule", {"pack": "jakarta", "max_diff_lines": 1})
+expect(not error and "files changed and saved" in text and "Configuration files" in text,
+       "the jakarta pack applies and lists what is left for hand edits")
+s.close()
+sources = {}
+for root, _, files in os.walk(os.path.join(jee, "src")):
+    for f in files:
+        sources[f] = open(os.path.join(root, f)).read()
+code = "\n".join(sources.values())
+ee = re.compile(r"\bjavax\.(servlet|persistence|validation|inject|ws\.rs|transaction|annotation\.(PostConstruct|PreDestroy))\b")
+left = [l.strip() for l in code.splitlines()
+        if ee.search(l) and '"javax.persistence.jdbc.url"' not in l and l.strip() != "import javax.persistence.*;"]
+expect(not left, f"jakarta: no Java EE javax reference left ({left[:3]})")
+for kept in ("import javax.sql.DataSource;", "import javax.crypto.Cipher;", "import javax.naming.InitialContext;",
+             '"javax.persistence.jdbc.url"'):
+    expect(kept in code, f"jakarta: the JDK's javax and the string stay: {kept}")
+expect("import jakarta.persistence.Entity;" in sources["Category.java"] and "jakarta.servlet.http.HttpServlet" in code,
+       "jakarta: the imports name jakarta")
+# the hand edits the notes name: the build without the javax APIs, the wildcard import out
+pom = os.path.join(jee, "pom.xml")
+text = open(pom).read()
+text = re.sub(r"\s*<dependency>\s*<groupId>javax\.[^<]*</groupId>.*?</dependency>", "", text, flags=re.S)
+open(pom, "w").write(text)
+product = os.path.join(jee, "src", "main", "java", "com", "acme", "shop", "Product.java")
+migrated = open(product).read()
+expect("jakarta.persistence.Entity" in migrated and "javax.persistence.Entity" not in migrated,
+       "jakarta: the file with the wildcard import names the jakarta types (written fully qualified)")
+open(product, "w").write(migrated.replace("import javax.persistence.*;\n", ""))
+# no "clean": its plugin is not in a fresh local repository, and this build is offline
+shutil.rmtree(os.path.join(jee, "target"), ignore_errors=True)
+build = subprocess.run(["mvn", "-q", "-B", "-o", "compile"], cwd=jee, capture_output=True, text=True)
+expect(build.returncode == 0, "jakarta: compiles against the jakarta APIs alone: "
+       + " | ".join(l for l in build.stdout.splitlines() if "ERROR" in l)[:400])
+
 print("RULE-PACKS TEST " + ("FAILED: " + "; ".join(failures) if failures else "PASSED"))
 sys.exit(1 if failures else 0)
