@@ -42,7 +42,16 @@ public class ApplyRuleToolTest {
             assertTrue(name + " has rules", pack.rules().split(";;").length > 5);
             assertTrue(name + " has notes", !pack.notes().isEmpty());
             assertTrue(name + ": no comment left in the rules", !pack.rules().contains("#"));
-            assertNull(name, ApplyRuleTool.checkSyntax(pack.rules()));
+            if (name.equals("jakarta")) {
+                // generated, hundreds of rules: check their one form instead of parsing each with javac
+                for (String rule : pack.rules().split(";;")) {
+                    if (!rule.isBlank()) {
+                        assertTrue(rule, rule.strip().matches("javax\\.[\\w.]+ => jakarta\\.[\\w.]+"));
+                    }
+                }
+            } else {
+                assertNull(name, ApplyRuleTool.checkSyntax(pack.rules()));
+            }
         }
         assertNull(ApplyRuleTool.Pack.load("../junit5"));
         assertNull(ApplyRuleTool.Pack.load("nonsense"));
