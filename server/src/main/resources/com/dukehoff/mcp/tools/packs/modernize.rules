@@ -4,6 +4,8 @@
 #
 # Java modernization: try-with-resources, for-each, getOrDefault, isEmpty, valueOf.
 # Lines starting with #! are shown with the result.
+#! valueOf shares cached instances (Integer -128..127, Boolean, ...): where code relies on a fresh object
+#! (== comparisons, synchronizing on it, identity maps), keep new Integer(...) there by hand.
 #! Check the build afterwards. Not covered: anonymous classes to lambdas (NetBeans' own hint does that), loops that
 #! index into lists, and resources closed in a finally block that does more than close them (kept on purpose).
 $T $r = $init; try { $body$; } finally { $r.close(); } :: $r instanceof java.lang.AutoCloseable => try ($T $r = $init) { $body$; } ;;

@@ -128,15 +128,16 @@ for root, _, files in os.walk(os.path.join(jee, "src")):
     for f in files:
         sources[f] = open(os.path.join(root, f)).read()
 code = "\n".join(sources.values())
-ee = re.compile(r"\bjavax\.(servlet|persistence|validation|inject|ws\.rs|transaction|annotation\.(PostConstruct|PreDestroy))\b")
+ee = re.compile(r"\bjavax\.(servlet|persistence|validation|inject|ws\.rs|transaction|xml\.bind|annotation\.(PostConstruct|PreDestroy))\b")
 left = [l.strip() for l in code.splitlines()
         if ee.search(l) and '"javax.persistence.jdbc.url"' not in l and l.strip() != "import javax.persistence.*;"]
 expect(not left, f"jakarta: no Java EE javax reference left ({left[:3]})")
 for kept in ("import javax.sql.DataSource;", "import javax.crypto.Cipher;", "import javax.naming.InitialContext;",
              '"javax.persistence.jdbc.url"'):
     expect(kept in code, f"jakarta: the JDK's javax and the string stay: {kept}")
-expect("import jakarta.persistence.Entity;" in sources["Category.java"] and "jakarta.servlet.http.HttpServlet" in code,
-       "jakarta: the imports name jakarta")
+expect("import jakarta.persistence.Entity;" in sources["Category.java"] and "jakarta.servlet.http.HttpServlet" in code
+       and "import jakarta.xml.bind.annotation.XmlRootElement;" in sources["ProductList.java"],
+       "jakarta: the imports name jakarta (JAXB included)")
 # the hand edits the notes name: the build without the javax APIs, the wildcard import out
 pom = os.path.join(jee, "pom.xml")
 text = open(pom).read()
