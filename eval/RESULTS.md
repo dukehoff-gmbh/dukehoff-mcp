@@ -918,3 +918,29 @@ structural rewrite rules that check types and match whole statements, not text."
   half the time, close to the sessions instructed in the prompt (11.0 turns, 0.155 USD).
 - So a line in the project instructions is enough to get the tool used where it pays; the
   extension's section and the README now carry it.
+
+## 2026-10-18: the rule packs on real projects (Spring PetClinic, Commons Lang)
+
+**`jakarta` on Spring PetClinic.** Commit `9ecdc11` of spring-projects/spring-petclinic, the last
+before its move to Spring Boot 3 (Spring Boot 2.7.3, Java 8): 15 files with javax imports
+(`javax.persistence` 38, `javax.validation` 9, `javax.xml.bind` 3, `javax.cache` 1); builds, 41 tests
+(1 skipped). `apply_rule` with `pack: "jakarta"` through the v0.9.0 server:
+
+| Step | Result |
+|---|---|
+| dry run, then applied | 13 files changed in 2.9 s (dry run 2.3 s); the server session including indexing 28 s |
+| the diffs | imports replaced in place, order kept; spring-javaformat and Checkstyle pass afterwards |
+| kept | `javax.cache` (JCache keeps its javax namespace under Spring Boot 3) |
+| not covered | `javax.xml.bind` (JAXB) in `Vet` and `Vets`: changed by hand |
+| build changes for Spring Boot 3 (by hand, as the pack's notes say) | parent 3.0.13 and Java 17; `com.mysql:mysql-connector-j`; `io.github.git-commit-id:git-commit-id-maven-plugin`; Ehcache with the `jakarta` classifier; `jakarta.xml.bind-api` as a dependency |
+| result | Spring Boot 3.0.13 builds, 41 tests pass (1 skipped), as before |
+
+**`modernize` on Commons Lang 3.17.0.** The code base is already modern: the pack would change two
+places in one test (`AtomicInitializerNonObjectTest`), both `new Integer(0)` -> `Integer.valueOf(0)`.
+That test may rely on a fresh instance; `valueOf` returns a cached one. The rule is not equivalent
+where code depends on object identity (`==`, synchronization on the object).
+
+Follow-ups (after the pause): extend `jakarta` by the other APIs that moved (JAXB `jakarta.xml.bind`,
+`jakarta.activation`, `jakarta.mail`, `jakarta.json`, `jakarta.jms`, `jakarta.ejb`, CDI
+`jakarta.enterprise`, `jakarta.faces`, `jakarta.websocket`; the generator only needs the artifacts);
+name the identity caveat in the `modernize` notes or move the `valueOf` rules into a pack of their own.
