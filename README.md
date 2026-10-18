@@ -4,6 +4,8 @@
     SPDX-License-Identifier: Apache-2.0
 
 -->
+<p align="center"><img src="images/logo.svg" width="160" alt="Dukehoff MCP for Java: Duke with code and AI"></p>
+
 # Dukehoff MCP for Java
 
 Headless [Model Context Protocol](https://modelcontextprotocol.io) server that gives coding agents
