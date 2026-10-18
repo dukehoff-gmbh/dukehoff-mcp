@@ -918,3 +918,30 @@ structural rewrite rules that check types and match whole statements, not text."
   half the time, close to the sessions instructed in the prompt (11.0 turns, 0.155 USD).
 - So a line in the project instructions is enough to get the tool used where it pays; the
   extension's section and the README now carry it.
+
+## 2026-10-18: the rule packs on real projects (Spring PetClinic, Commons Lang)
+
+**`jakarta` on Spring PetClinic.** Commit `9ecdc11` of spring-projects/spring-petclinic, the last
+before its move to Spring Boot 3 (Spring Boot 2.7.3, Java 8): 15 files with javax imports
+(`javax.persistence` 38, `javax.validation` 9, `javax.xml.bind` 3, `javax.cache` 1); builds, 41 tests
+(1 skipped). `apply_rule` with `pack: "jakarta"`:
+
+| Step | First try (585 rules) | After extending the pack (1,634 rules) |
+|---|---|---|
+| applied | 13 files in 2.9 s | 14 files in 3.5 s |
+| left in Java code | `javax.xml.bind` (JAXB) in `Vet`, `Vets`; `javax.cache` | only `javax.cache` (JCache keeps its javax namespace under Spring Boot 3) |
+| the diffs | imports replaced in place, order kept; spring-javaformat and Checkstyle pass | the same |
+| Java edits by hand | the JAXB imports | none |
+
+The build changes for Spring Boot 3 stay by hand, as the pack's notes say: parent 3.0.13 and Java
+17; `com.mysql:mysql-connector-j`; `io.github.git-commit-id:git-commit-id-maven-plugin`; Ehcache with
+the `jakarta` classifier; `jakarta.xml.bind-api` as a dependency. Then Spring Boot 3.0.13 builds and
+all 41 tests pass (1 skipped), as before. The pack was extended after the first try by the other APIs
+that moved: JAXB, Activation, Mail, JSON-P, JSON-B, JMS, EJB, CDI, Interceptors, Faces, WebSocket,
+JSP and EL (the generator `server/src/packs/make-jakarta-pack.py` takes them from the API jars); the
+test fixture has a JAXB class since.
+
+**`modernize` on Commons Lang 3.17.0.** The code base is already modern: the pack would change two
+places in one test (`AtomicInitializerNonObjectTest`), both `new Integer(0)` -> `Integer.valueOf(0)`.
+That test may rely on a fresh instance; `valueOf` returns a cached one. The pack's notes and
+description now say so: keep `new Integer(...)` by hand where code relies on object identity.

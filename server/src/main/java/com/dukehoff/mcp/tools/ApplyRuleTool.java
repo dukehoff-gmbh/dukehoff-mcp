@@ -120,9 +120,11 @@ public final class ApplyRuleTool implements Tool {
 
     static {
         PACKS.put("junit5", "JUnit 4 to 5: assertions with the message moved last, assertThat to Hamcrest, annotations");
-        PACKS.put("modernize", "try-with-resources, for-each, getOrDefault, isEmpty, valueOf instead of new Integer(...)");
-        PACKS.put("jakarta", "javax to jakarta for Servlet, Persistence, Validation, Annotation, Inject, JAX-RS, Transaction; "
-                + "the JDK's own javax packages stay");
+        PACKS.put("modernize", "try-with-resources, for-each, getOrDefault, isEmpty, valueOf instead of new Integer(...) "
+                + "(which shares cached instances: not for code relying on object identity)");
+        PACKS.put("jakarta", "javax to jakarta for Servlet, JSP, EL, Persistence, Validation, Annotation, Inject, CDI, "
+                + "EJB, JAX-RS, Transaction, JAXB, Activation, Mail, JSON-P, JSON-B, JMS, Faces, WebSocket; the JDK's own "
+                + "javax packages and JCache (javax.cache) stay");
     }
 
     /**

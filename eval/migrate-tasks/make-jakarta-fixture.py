@@ -5,7 +5,7 @@
 
 """Generates a small Java EE 8 project (javax.*) for the jakarta rule pack, as a git repository.
 
-It uses Persistence and Validation (an entity), Servlet, JAX-RS, Inject, Annotation and Transaction,
+It uses Persistence and Validation (an entity), Servlet, JAX-RS, Inject, Annotation, Transaction and JAXB,
 one wildcard import, and the JDK's own javax packages (javax.sql, javax.crypto, javax.naming) and a
 javax property key in a string, which must stay. pom.xml has the javax and the jakarta APIs, so the
 code compiles before and after the migration; without the javax APIs only migrated code compiles.
@@ -25,7 +25,8 @@ APIS = [("javax.servlet", "javax.servlet-api", "4.0.1"), ("jakarta.servlet", "ja
         ("javax.annotation", "javax.annotation-api", "1.3.2"), ("jakarta.annotation", "jakarta.annotation-api", "2.1.1"),
         ("javax.inject", "javax.inject", "1"), ("jakarta.inject", "jakarta.inject-api", "2.0.1"),
         ("javax.ws.rs", "javax.ws.rs-api", "2.1.1"), ("jakarta.ws.rs", "jakarta.ws.rs-api", "3.1.0"),
-        ("javax.transaction", "javax.transaction-api", "1.3"), ("jakarta.transaction", "jakarta.transaction-api", "2.0.1")]
+        ("javax.transaction", "javax.transaction-api", "1.3"), ("jakarta.transaction", "jakarta.transaction-api", "2.0.1"),
+        ("javax.xml.bind", "jaxb-api", "2.3.1"), ("jakarta.xml.bind", "jakarta.xml.bind-api", "4.0.0")]
 deps = "\n".join(f"""        <dependency>
             <groupId>{g}</groupId>
             <artifactId>{a}</artifactId>
@@ -48,6 +49,19 @@ POM = f"""<?xml version="1.0" encoding="UTF-8"?>
 </project>
 """
 FILES = {
+    "ProductList.java": """package com.acme.shop;
+
+import java.util.List;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement(name = "products")
+public class ProductList {
+
+    @XmlElement(name = "product")
+    public List<String> names;
+}
+""",
     "Product.java": """package com.acme.shop;
 
 import javax.persistence.*;
