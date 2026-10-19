@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>dukehoff-mcp-server</artifactId>
+            <artifactId>dukehoff-mcp-netbeans</artifactId>
             <version>${project.version}</version>
             <type>nbm</type>
         </dependency>

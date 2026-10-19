@@ -14,10 +14,14 @@
         <artifactId>dukehoff-mcp-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>dukehoff-mcp-server</artifactId>
+    <!-- the NetBeans plugin, on Maven Central for the Plugin Portal: its name and description show there -->
+    <artifactId>dukehoff-mcp-netbeans</artifactId>
     <packaging>nbm</packaging>
-    <name>dukehoff-mcp server</name>
-    <description>The NetBeans module: MCP protocol, workspace handling and the tools.</description>
+    <name>Dukehoff MCP for Java</name>
+    <description>Lets coding agents in a terminal (Claude Code, Codex, Copilot CLI, ...) use the running IDE's Java
+        index and refactorings over the Model Context Protocol: find usages and implementations, compile errors,
+        rename, change signature, move, safe delete, Jackpot rewrite rules and a one-call test debugger. The
+        same module runs the headless server and the VS Code extension.</description>
 
     <properties>
         <!-- the Lombok dukehoff-mcp uses for analysis when a project's is too old for nb-javac (LombokProcessorPath);

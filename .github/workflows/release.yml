@@ -9,6 +9,11 @@ name: Release
 # release with the runtime archives, the VS Code extension, the NetBeans plugin, the launcher jar and
 # their checksums. Started by hand (Actions > Release > Run
 # workflow) it is a dry run: the same build and test, the archives only as a workflow artifact.
+# A tag also uploads the NetBeans plugin (and the parent pom) to Maven Central, which the NetBeans Plugin
+# Portal takes plugins from, once the secrets CENTRAL_USERNAME and CENTRAL_PASSWORD (a Central Portal
+# user token) and MAVEN_GPG_PRIVATE_KEY and MAVEN_GPG_PASSPHRASE (the signing key) are set. The upload
+# then waits in the Central Portal for "Publish", unless the repository variable CENTRAL_AUTO_PUBLISH is
+# true.
 
 on:
   push:
@@ -27,6 +32,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      PUBLISH_CENTRAL: ${{ github.ref_type == 'tag' && secrets.CENTRAL_USERNAME != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +67,7 @@ jobs:
         run: |
           v=${{ steps.version.outputs.version }}
           cp ../../vscode/target/dukehoff-mcp-java-$v.vsix .
-          cp ../../server/target/dukehoff-mcp-server-$v.nbm dukehoff-mcp-netbeans-$v.nbm
+          cp ../../server/target/dukehoff-mcp-netbeans-$v.nbm .
           cp ../../launcher/target/dukehoff-mcp.jar dukehoff-mcp-launcher-$v.jar
           sha256sum dukehoff-mcp-$v.tar.gz dukehoff-mcp-$v.zip dukehoff-mcp-java-$v.vsix dukehoff-mcp-netbeans-$v.nbm \
               dukehoff-mcp-launcher-$v.jar > SHA256SUMS
@@ -88,6 +95,29 @@ jobs:
               --notes-file notes.md --generate-notes $prerelease \
               "dukehoff-mcp-${VERSION}.tar.gz" "dukehoff-mcp-${VERSION}.zip" "dukehoff-mcp-java-${VERSION}.vsix" \
               "dukehoff-mcp-netbeans-${VERSION}.nbm" "dukehoff-mcp-launcher-${VERSION}.jar" SHA256SUMS
+
+      - name: Maven Central credentials and signing key
+        if: env.PUBLISH_CENTRAL == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      # the poms already carry the tag's version (Build); only the parent and the plugin go to Central
+      - name: Publish the NetBeans plugin to Maven Central
+        if: env.PUBLISH_CENTRAL == 'true'
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          mvn -B -ntp -P central -pl server -am deploy -DskipTests \
+              -Dcentral.autoPublish=${{ vars.CENTRAL_AUTO_PUBLISH == 'true' }}
 
       - name: Keep the archives (dry run)
         if: github.ref_type != 'tag'
