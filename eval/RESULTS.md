@@ -117,8 +117,7 @@ refactorings wait up to 5 minutes, and `run.sh` allows long tool calls (`MCP_TOO
 
 ## 2026-10-02: the same tasks with Claude Sonnet 5
 
-Like the run above, but model `claude-sonnet-5` (the strongest model the pilot team's Copilot plan
-allows), 3 repetitions, on a plain apache/netbeans checkout (`c080a039d`, `nb-tasks/` expectations),
+Like the run above, but model `claude-sonnet-5`, 3 repetitions, on a plain apache/netbeans checkout (`c080a039d`, `nb-tasks/` expectations),
 with the module built from this repository and run in NetBeans 31. AI credits re-price the measured
 tokens at GitHub Copilot's Sonnet 5 rates ($2 input, $0.20 cached input, $2.50 cache write, $10 output
 per million tokens; 1 credit = $0.01).
@@ -344,7 +343,7 @@ No dependency, web or git calls.
   `Grep "static boolean regionMatches"`, straight at the injected bug, without reading `StringUtils`
   or running a test: the model knows Commons Lang's internals from training. Well-known open-source
   code understates what navigation tools are worth; that needs code the model has not seen (a
-  customer's code base, or a renamed/obfuscated copy).
+  private code base, or a renamed/obfuscated copy).
 * **Setup lesson:** workspaces under `~/.claude` do not work: Claude Code refuses edits there as
   "sensitive file". In two discarded sessions the agent reported success anyway, so only `check.sh`
   results count.
@@ -483,7 +482,7 @@ Long). Sonnet 5.5, without and with dukehoff-mcp (13 tools including `debug`), 3
   found by reading; an agent, like a developer, reaches for a debugger only when reading does not
   suffice. Candidates where it would: a cause in code without source (a library behaving
   unexpectedly), a wrong value built up over many steps (parsers, state machines), large unfamiliar
-  code bases where many classes could produce the value (first user site).
+  code bases where many classes could produce the value.
 * Decision: `debug` stays an opt-in group, in no preset; next, a task of one of those kinds before
   more work on the tool.
 
@@ -681,12 +680,12 @@ attempt failed on files the cleanup had deleted).
 * Ant harness again: three of eight #9399 sessions ran `ant -Dtest.class=X test` (the whole module
   suite, over an hour) and waited; ended by hand after their final answer, their seconds include it.
 
-### Tickets that do not point at a tool (2026-10-10, customer backend copy, Sonnet)
+### Tickets that do not point at a tool (2026-10-10, closed-source backend, Sonnet)
 
 The runs above put the tool's job into the prompt ("rename", "find callers"), so both variants used
 the tools: a ceiling, not a test of names. A valid test needs a task where a tool would pay but agents
 do not reach for it. Screened first with the old names (variant A) on ticket-style prompts on a
-redacted customer backend (multi-module Maven; local only, not in this repository):
+closed-source backend (multi-module Maven; local only, not in this repository):
 
 | ticket | correct | dukehoff-mcp calls | turns | cost (USD) |
 |---|---|---|---|---|
@@ -759,7 +758,7 @@ description, without it answers "NOT VISIBLE ... deferred"). Ticket 9, Sonnet, 2
 
 * **Descriptions in context bring the tools into play:** 4/4 sessions used one (0/10 with deferred
   schemas in all variants). Mostly the compile check, late, in place of a Maven compile: the tool that
-  replaces a step the agent takes anyway (as at the first user site with Copilot).
+  replaces a step the agent takes anyway (as in real sessions with Copilot).
 * One B2 session used `change_signature` early: 34 files in one call. Old vs. new names, 0/2 vs. 1/2:
   too few sessions to credit the names.
 * It saved nothing here: that session still made 128 tool calls, since every implementation's body

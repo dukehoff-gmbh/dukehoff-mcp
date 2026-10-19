@@ -288,7 +288,7 @@ public final class Workspace {
     /**
      * NetBeans runs a Gradle project's build scripts, which it needs to learn the source sets, only
      * for projects the user trusts, and asks in the IDE. Headless nobody can answer: the project then
-     * has no source roots and nothing is logged (found at the first user site). The workspace is what
+     * has no source roots and nothing is logged. The workspace is what
      * the user started this server on, so run its builds as {@code gradlew} would. Every workspace has
      * its own userdir, so the setting stays with this workspace.
      */

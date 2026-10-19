@@ -52,7 +52,7 @@ public class McpServerTest {
 
     @Test
     public void toolListPutsSearchTermsIntoTheDescription() throws Exception {
-        // what Copilot CLI's tool search failed on at the first user site: "netbeans rename", "rename symbol"
+        // what Copilot CLI's tool search failed on in practice: "netbeans rename", "rename symbol"
         String in = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}\n";
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         new McpServer(new ByteArrayInputStream(in.getBytes(StandardCharsets.UTF_8)), out,
@@ -64,7 +64,7 @@ public class McpServerTest {
 
     @Test
     public void slowCallLogsWhereItWaits() throws Exception {
-        // the first user site saw only "Request timed out" from the client; the log must say where the call hangs
+        // a client may report only "Request timed out"; the log must say where the call hangs
         List<String> logged = new CopyOnWriteArrayList<>();
         Handler handler = new Handler() {
             @Override

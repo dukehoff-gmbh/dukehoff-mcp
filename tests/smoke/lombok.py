@@ -4,7 +4,7 @@
 #
 
 """Checks Lombok support: a Maven and a Gradle project with a Lombok too old for NetBeans' nb-javac
-(1.18.38, as at the first user site), where dukehoff-mcp's bundled Lombok must take over. Per project:
+(1.18.38), where dukehoff-mcp's bundled Lombok must take over. Per project:
 no false compile errors, generated members in outline, find_usages of generated getters and builders
 (including a method reference and two calls on one line), and rename of a generated member refused.
 
