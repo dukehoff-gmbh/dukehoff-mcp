@@ -143,7 +143,8 @@ Each release also carries it as `dukehoff-mcp-java-<version>.vsix` on the
 view, "Install from VSIX..."). It needs no download of the runtime above: it brings the Apache NetBeans
 Language Server extension along and runs inside its NetBeans; the tools appear in Copilot's agent mode
 as the server **Java**. It needs NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the
-default).
+default). Claude Code's VS Code extension has its own MCP configuration and does not see that server;
+the command **Dukehoff MCP: Use the Java tools in Claude Code** registers it there for the folder.
 
 Refactorings write their files themselves, apart from the agent's own edits. The extension shows each
 one in a notification with **Review** (a diff of all files it changed) and **Undo**; the setting

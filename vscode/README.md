@@ -25,6 +25,13 @@ Install the extension and open a Maven, Gradle or Ant project. The tools appear 
 mode under the server **Java**; VS Code asks once before starting it. Indexing a new project takes a
 moment; the tools wait for it.
 
+**Claude Code in VS Code** has its own panel and its own MCP configuration, so it does not see the
+servers of VS Code's chat. The command **Dukehoff MCP: Use the Java tools in Claude Code** registers
+the same server with Claude Code for the folder, in its local scope (only for you, not in the
+repository); it shows the entry first and writes it only when you confirm. The extension suggests
+it once when Claude Code's extension is installed. Start a new Claude Code session afterwards; the
+tools work while the VS Code window is open.
+
 Requirements: VS Code 1.101 or newer (its MCP support; older versions refuse to install the
 extension), a JDK 17 or newer (the one the NetBeans extension uses, setting `netbeans.jdkhome`, or
 `JAVA_HOME`), and NetBeans' Java support enabled (`netbeans.javaSupport.enabled`, the default).
@@ -62,6 +69,10 @@ instead of adding another. The extension suggests it once per workspace.
 - **No Java tools in Copilot:** the tools come from the server **Java** (Copilot's tool list in agent
   mode; "MCP: List Servers" shows its state and output). The workspace must contain a Maven, Gradle
   or Ant project, and NetBeans' Java support must be enabled (`netbeans.javaSupport.enabled`).
+- **No Java tools in Claude Code:** run **Dukehoff MCP: Use the Java tools in Claude Code** and start a
+  new session; `claude mcp list` in the folder shows the server `java`. Claude Code started in a
+  terminal outside VS Code reaches the tools only while the folder is open in a VS Code window; for
+  Claude Code on its own, use the standalone server.
 - **The output channel "Dukehoff MCP for Java"** (View, Output) says what happened: the module version
   inside NetBeans, the server's socket, or why it did not start.
 - **JDK:** NetBeans needs a JDK 17 or newer: the setting `netbeans.jdkhome`, else `JAVA_HOME`.
@@ -72,7 +83,7 @@ instead of adding another. The extension suggests it once per workspace.
 - **Results look incomplete:** build the project once (so its dependencies are downloaded) and check
   the compile errors (`diagnostics`): files that do not compile are named in the results.
 
-Outside VS Code (Copilot CLI, Claude Code, Codex, Cursor) use the standalone server from the
+Outside VS Code (Copilot CLI, Claude Code in a terminal, Codex, Cursor) use the standalone server from the
 [releases](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases).
 
 ## License

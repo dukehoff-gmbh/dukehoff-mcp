@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as agentHints from './agentHints';
+import * as claudeCode from './claudeCode';
 
 /**
  * Registers the Java MCP server for Copilot (and any agent in VS Code). The server runs inside the
@@ -45,6 +46,8 @@ export function activate(context: vscode.ExtensionContext): void {
     const connectionFile = path.join(storage, 'connection');
     fs.mkdirSync(storage, { recursive: true });
     fs.rmSync(connectionFile, { force: true }); // an earlier NetBeans' socket
+    const proxyArgs = (folder: vscode.WorkspaceFolder) =>
+        ['--connect-file', connectionFile, ...allowWrites(folder), folder.uri.fsPath];
 
     context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('dukehoff-mcp', {
         onDidChangeMcpServerDefinitions: changed.event,
@@ -53,13 +56,15 @@ export function activate(context: vscode.ExtensionContext): void {
             return folders.map(folder => new vscode.McpStdioServerDefinition(
                 folders.length > 1 ? `Java (${folder.name})` : 'Java',
                 javaCommand(),
-                ['-jar', jar, '--connect-file', connectionFile, ...allowWrites(folder), folder.uri.fsPath],
+                ['-jar', jar, ...proxyArgs(folder)],
                 {},
                 version));
         }
     }));
 
     agentHints.register(context, log);
+    claudeCode.register(context, log,
+        { java: javaCommand, jar: claudeCode.installJar(context, jar, version, log), args: proxyArgs });
     const changes = new Changes(log);
     context.subscriptions.push(changes, vscode.workspace.registerTextDocumentContentProvider(BEFORE, changes));
 
@@ -68,7 +73,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (found.length > 0) {
             if (await writeConnection(connectionFile, log)) {
                 void changes.watch();
-                void agentHints.offerOnce(context);
+                void agentHints.offerOnce(context).then(() => claudeCode.offerOnce(context));
             }
         } else {
             log.appendLine('no Java project in this workspace; NetBeans is not started for the MCP server');

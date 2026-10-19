@@ -73,13 +73,18 @@
         "command": "dukehoffMcp.addAgentHints",
         "title": "Add Java tool hints to AGENTS.md",
         "category": "Dukehoff MCP"
+      },
+      {
+        "command": "dukehoffMcp.addToClaudeCode",
+        "title": "Use the Java tools in Claude Code",
+        "category": "Dukehoff MCP"
       }
     ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "package": "node -e \"require('fs').mkdirSync('target',{recursive:true})\" && vsce package --out target/",
-    "test": "node test/agentHints.test.js"
+    "test": "node test/agentHints.test.js && node test/claudeCode.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
