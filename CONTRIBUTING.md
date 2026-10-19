@@ -65,6 +65,15 @@ runs the smoke test and publishes a GitHub release with `dukehoff-mcp-<version>.
 `SHA256SUMS`. Versions with a suffix (`0.2.0-rc1`) become pre-releases. Actions > Release > Run
 workflow is a dry run of the same steps, without a release.
 
+A tag also puts the NetBeans plugin on Maven Central (`com.dukehoff.mcp:dukehoff-mcp-netbeans`, with
+the parent pom), where the NetBeans Plugin Portal takes it from. That needs the repository secrets
+`CENTRAL_USERNAME` and `CENTRAL_PASSWORD` (a user token of the Central Portal account that owns the
+namespace `com.dukehoff`) and `MAVEN_GPG_PRIVATE_KEY` and `MAVEN_GPG_PASSPHRASE` (the release signing
+key); without them the step is skipped. The upload waits in the Central Portal for **Publish** unless
+the repository variable `CENTRAL_AUTO_PUBLISH` is `true`. To check the bundle locally without
+uploading: `mvn -P central -pl server -am deploy -DskipTests -Dcentral.skipPublishing=true` (the bundle
+is in `target/central-publishing`; it is built only for a release version, not a `-SNAPSHOT`).
+
 ## Reporting security issues
 
 Please do not open a public issue for a vulnerability; see [SECURITY.md](SECURITY.md).

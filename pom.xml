@@ -5,9 +5,11 @@
     SPDX-License-Identifier: Apache-2.0
 
 -->
+<!-- url and scm as they are in the modules too (Maven would append the module's name) -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dukehoff.mcp</groupId>
     <artifactId>dukehoff-mcp-parent</artifactId>
@@ -15,8 +17,10 @@
     <packaging>pom</packaging>
     <name>dukehoff-mcp</name>
     <description>Java code intelligence and refactoring for coding agents, served over MCP by a headless NetBeans.</description>
+    <url>https://github.com/dukehoff-gmbh/dukehoff-mcp</url>
     <organization>
         <name>Dukehoff GmbH</name>
+        <url>https://dukehoff.com</url>
     </organization>
     <licenses>
         <license>
@@ -25,6 +29,23 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+    <developers>
+        <developer>
+            <name>Anton Epple</name>
+            <organization>Dukehoff GmbH</organization>
+            <organizationUrl>https://dukehoff.com</organizationUrl>
+        </developer>
+    </developers>
+    <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <connection>scm:git:https://github.com/dukehoff-gmbh/dukehoff-mcp.git</connection>
+        <developerConnection>scm:git:git@github.com:dukehoff-gmbh/dukehoff-mcp.git</developerConnection>
+        <url>https://github.com/dukehoff-gmbh/dukehoff-mcp</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/dukehoff-gmbh/dukehoff-mcp/issues</url>
+    </issueManagement>
 
     <modules>
         <module>server</module>
@@ -198,4 +219,86 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Maven Central (the NetBeans Plugin Portal takes plugins only from there): sources, Javadoc and
+             GPG signatures, uploaded through the Central Portal. The release workflow runs
+             mvn -P central -pl server -am deploy, so only this parent and the NetBeans plugin go there.
+             -Dcentral.skipPublishing=true builds the bundle (target/central-publishing) without uploading;
+             -Dcentral.autoPublish=true publishes without the manual step in the portal. -->
+        <profile>
+            <id>central</id>
+            <properties>
+                <central.skipPublishing>false</central.skipPublishing>
+                <central.autoPublish>false</central.autoPublish>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <configuration>
+                            <!-- the passphrase from MAVEN_GPG_PASSPHRASE, no pinentry (CI) -->
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <skipPublishing>${central.skipPublishing}</skipPublishing>
+                            <autoPublish>${central.autoPublish}</autoPublish>
+                            <waitUntil>validated</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
