@@ -13,7 +13,8 @@ launcher's proxy (java -jar dukehoff-mcp.jar --connect <socket> <folder>) on a g
 Usage: embedded.py <apache-netbeans extension dir> <our cluster dir> <dukehoff-mcp.jar> [work dir]
   extension dir: the unpacked VSIX's extension/ folder (with nbcode/); cluster dir: the folder with
   config/Modules/com-dukehoff-mcp.xml (runtime/target/dukehoffmcp/extra, only our files are needed).
-  Environment: JDK_HOME (JDK for nbcode and the proxy).   (exit 0 = pass)
+  Environment: JDK_HOME (JDK for nbcode and the proxy); EMBEDDED_CLAUDE: a claude program, to check
+  that Claude Code connects through the entry the extension registers for it.   (exit 0 = pass)
 """
 
 import json
@@ -223,6 +224,19 @@ while time.time() - started < 600:
         break
     time.sleep(2)
 expect(f"the workspace is ready in nbcode ({time.time() - started:.0f} s)", "State: ready" in status, status)
+claude = os.environ.get("EMBEDDED_CLAUDE")
+if claude:
+    # what the extension's command "Use the Java tools in Claude Code" registers, in Claude Code's local
+    # scope for the project; "claude mcp get" connects to the server to report its state
+    entry = json.dumps({"type": "stdio", "command": java, "args": ["-jar", jar, "--connect-file", connection_file, project]})
+    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")}
+    run = lambda *args: subprocess.run([claude, "mcp", *args], cwd=project, env=env, capture_output=True, text=True, timeout=300)
+    added = run("add-json", "--scope", "local", "java", entry)
+    expect("Claude Code takes the server into its local scope", added.returncode == 0, added.stdout + added.stderr)
+    got = run("get", "java")
+    expect("Claude Code connects to the server inside nbcode", "Connected" in got.stdout and "Failed" not in got.stdout,
+           got.stdout + got.stderr)
+    run("remove", "--scope", "local", "java")
 if os.environ.get("EMBEDDED_PROBE"):
     greeter_uri = root_uri + "/src/main/java/demo/Greeter.java"
     with open(os.path.join(project, "src/main/java/demo/Greeter.java")) as f:
