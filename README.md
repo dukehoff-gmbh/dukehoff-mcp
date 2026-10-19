@@ -377,6 +377,8 @@ own tools. `eval/nb-tasks` has three tasks for the `java/` folder of an Apache N
 (`run.sh --repo <checkout> --workspace java --tasks-dir eval/nb-tasks --dukehoff-mcp <launcher>`); their
 expected answers fit apache/netbeans at commit `c080a039d`.
 
+`eval/record.sh` records a task as a side-by-side terminal video, without and with the server (usage in the script).
+
 ## Design notes
 
 * The protocol layer (`McpServer`) is a small JSON-RPC-over-stdio implementation on top of
