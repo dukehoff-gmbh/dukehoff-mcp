@@ -59,12 +59,21 @@ jobs:
         env:
           JDK_HOME: ${{ env.JAVA_HOME }}
 
-      # the server inside a running IDE (the runtime stands in for it), reached with --ide
+      # for the IDE server test's agent in a sandbox like lince's (Ubuntu 24.04 restricts the unprivileged
+      # user namespaces bubblewrap needs, through AppArmor)
+      - name: bubblewrap
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y -qq bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # the server inside a running IDE (the runtime stands in for it), reached with --ide, also from a sandbox
       - name: IDE server test
         if: runner.os != 'Windows'
         run: python3 tests/smoke/ide-server.py runtime/target/dukehoffmcp/bin/dukehoff-mcp
         env:
           JDK_HOME: ${{ env.JAVA_HOME }}
+          IDE_SANDBOX_REQUIRED: ${{ runner.os == 'Linux' && '1' || '' }}
 
       # the rule packs of apply_rule on the migration fixtures of eval/migrate-tasks
       - name: Rule packs test

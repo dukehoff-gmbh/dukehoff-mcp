@@ -233,6 +233,13 @@ tools see the projects open in NetBeans there, name files relative to it and wri
 no project there is open, the tools say so; open it in NetBeans. NetBeans announces the server in
 `~/.dukehoff-mcp/ide/`; `-J-Ddukehoffmcp.ide.server=false` (in `etc/netbeans.conf`) turns it off.
 
+**An agent in a sandbox** needs no network port: only Java, the launcher jar and read access to
+`~/.dukehoff-mcp/ide/`, where the server's Unix domain socket lies next to its announcement (in a
+temporary folder instead if that path is longer than about 100 bytes), and the project at the same
+path as in NetBeans. A separate process namespace is fine. For [lince](https://github.com/RisorseArtificiali/lince),
+for example: `home_ro_dirs = [".dukehoff-mcp"]` under `[sandbox]`. The refactorings are done by NetBeans
+itself, outside the sandbox; they write only inside the agent's folder unless more is allowed (see above).
+
 ### Telling the agent when to use the tools
 
 Agents pick tools by what they read, and project instructions weigh most. A short section in the
