@@ -162,12 +162,17 @@ final class Daemon {
         try (channel) {
             InputStream in = input(channel);
             OutputStream out = output(channel);
-            out.write((JSONValue.toJSONString(Map.of("dukehoffmcp", "daemon", "version", version,
-                    "pid", ProcessHandle.current().pid())) + "\n").getBytes(StandardCharsets.UTF_8));
-            out.flush();
-            String request = readLine(in);
+            String request;
+            try {
+                out.write((JSONValue.toJSONString(Map.of("dukehoffmcp", "daemon", "version", version,
+                        "pid", ProcessHandle.current().pid())) + "\n").getBytes(StandardCharsets.UTF_8));
+                out.flush();
+                request = readLine(in);
+            } catch (IOException ex) {
+                request = null;
+            }
             if (request == null) {
-                return;
+                return; // a client that only checked whether we answer (the launcher's --ide)
             }
             Map<?, ?> message = JSONValue.parse(request) instanceof Map<?, ?> m ? m : Map.of();
             Object command = message.get("dukehoffmcp");

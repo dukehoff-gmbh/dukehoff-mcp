@@ -5,6 +5,9 @@
 package com.dukehoff.mcp.launcher;
 
 import java.io.IOException;
+import java.net.StandardProtocolFamily;
+import java.net.UnixDomainSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,11 +25,15 @@ import java.util.stream.Stream;
  * The servers of running NetBeans IDEs with our plugin: each announces itself in
  * {@code ~/.dukehoff-mcp/ide/<pid>.json} ({@code DUKEHOFF_MCP_IDE_DIR} elsewhere) with its socket, and
  * removes the entry when it exits. {@code --ide} connects to the most recently started one that runs.
+ *
+ * Whether an IDE runs is decided by its socket accepting a connection, not by its process: an agent in a
+ * sandbox with its own process namespace (bubblewrap's --unshare-pid, containers) does not see the IDE's
+ * process. For the same reason this only reads the registry, which such a sandbox may mount read-only;
+ * the IDE removes entries of ended IDEs when it starts.
  */
 final class IdeRegistry {
 
     private static final Pattern SOCKET = Pattern.compile("\"socket\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
-    private static final Pattern PID = Pattern.compile("\"pid\"\\s*:\\s*(\\d+)");
 
     private IdeRegistry() {
     }
@@ -36,7 +43,7 @@ final class IdeRegistry {
         return dir != null && !dir.isBlank() ? Paths.get(dir) : Paths.get(System.getProperty("user.home"), ".dukehoff-mcp", "ide");
     }
 
-    /** The socket of the newest running IDE; entries of ended processes are removed. */
+    /** The socket of the newest IDE that answers on it. */
     static Optional<Path> find(Path dir) throws IOException {
         if (!Files.isDirectory(dir)) {
             return Optional.empty();
@@ -52,21 +59,31 @@ final class IdeRegistry {
                 return java.nio.file.attribute.FileTime.fromMillis(0);
             }
         }).reversed());
-        Optional<Path> found = Optional.empty();
         for (Path entry : entries) {
-            String text = Files.readString(entry, StandardCharsets.UTF_8);
+            String text;
+            try {
+                text = Files.readString(entry, StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                continue; // removed meanwhile, or not readable here
+            }
             Matcher socket = SOCKET.matcher(text);
-            Matcher pid = PID.matcher(text);
-            boolean alive = pid.find() && ProcessHandle.of(Long.parseLong(pid.group(1))).map(ProcessHandle::isAlive).orElse(false);
-            if (!alive) {
-                Files.deleteIfExists(entry);
-            } else if (found.isEmpty() && socket.find()) {
+            if (socket.find()) {
                 Path s = Paths.get(socket.group(1).replace("\\\\", "\\").replace("\\/", "/"));
-                if (Files.exists(s)) {
-                    found = Optional.of(s);
+                if (answers(s)) {
+                    return Optional.of(s);
                 }
             }
         }
-        return found;
+        return Optional.empty();
+    }
+
+    /** Whether a server accepts connections on the socket (the IDE's server ignores a client that just closes). */
+    static boolean answers(Path socket) {
+        try (SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX)) {
+            channel.connect(UnixDomainSocketAddress.of(socket));
+            return true;
+        } catch (IOException | UnsupportedOperationException ex) {
+            return false;
+        }
     }
 }

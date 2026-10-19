@@ -9,9 +9,11 @@ Our headless runtime stands in for the IDE: it opens a folder with two projects 
 with -J-Ddukehoffmcp.ide.server=true, starts the IDE server and announces it in a registry folder
 (DUKEHOFF_MCP_IDE_DIR). An agent session started with --ide in app sees only app, with paths relative
 to its folder, and refactors there; one in a folder without an open project is told to open it; --ide
-without a running IDE fails with a message.
+without a running IDE fails with a message. On Linux with bubblewrap, an agent sandboxed like lince
+does it (own process namespace, a fresh /tmp, the registry read-only) still reaches the IDE.
 
 Usage: ide-server.py <launcher> [work dir]   (exit 0 = pass; launcher: bin/dukehoff-mcp)
+  Environment: IDE_SANDBOX_REQUIRED=1 fails instead of skipping the sandbox check without bubblewrap.
 """
 
 import glob
@@ -86,11 +88,15 @@ expect(len(entries) == 1, "the IDE announces its server in the registry")
 if not entries:
     ide.kill()
     sys.exit("FAIL: no IDE server")
+with open(entries[0]) as f:
+    announced = json.load(f)
+expect(announced.get("socket") == entries[0][:-len(".json")] + ".sock" and os.path.exists(announced["socket"]),
+       "the socket is next to the entry, so a sandbox needs only the registry folder")
 
 
 class Agent:
-    def __init__(self, folder):
-        self.p = subprocess.Popen([launcher, "--ide", folder], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    def __init__(self, folder, sandbox=()):
+        self.p = subprocess.Popen([*sandbox, launcher, "--ide", folder], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                   stderr=open(os.path.join(work, "agent.log"), "a"), text=True, bufsize=1)
         self.id = 0
         self.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "agent", "version": "1"}})
@@ -146,6 +152,24 @@ stranger = Agent(empty)
 error, text = stranger.tool("diagnostics", {})
 expect(error and "No project in" in text and "open" in text, "a folder without an open project is told to open it")
 stranger.close()
+
+# an agent sandboxed like lince does it (bubblewrap): the IDE's process is invisible, /tmp is empty, the
+# registry can be read but not written, only the agent's folder is writable
+bwrap = shutil.which("bwrap")
+sandbox = [bwrap, "--unshare-pid", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+           "--ro-bind", registry, registry, "--bind", app, app, "--chdir", app] if bwrap else None
+usable = sandbox and subprocess.run([*sandbox, "true"], capture_output=True).returncode == 0
+if usable:
+    boxed = Agent(app, sandbox)
+    error, text = boxed.tool("workspace_status", {})
+    expect(not error and app in text and "open in the IDE there" in text,
+           "an agent in a bubblewrap sandbox (own process namespace, fresh /tmp, read-only registry) reaches the IDE")
+    boxed.close()
+    expect(glob.glob(os.path.join(registry, "*.json")), "the sandboxed agent removed no entry")
+elif os.environ.get("IDE_SANDBOX_REQUIRED") == "1":
+    expect(False, "bubblewrap can create a sandbox here (IDE_SANDBOX_REQUIRED=1)")
+else:
+    print("skipped: the sandbox check (needs bubblewrap that may create namespaces)", flush=True)
 
 ide.stdin.close()
 try:
