@@ -377,21 +377,7 @@ own tools. `eval/nb-tasks` has three tasks for the `java/` folder of an Apache N
 (`run.sh --repo <checkout> --workspace java --tasks-dir eval/nb-tasks --dukehoff-mcp <launcher>`); their
 expected answers fit apache/netbeans at commit `c080a039d`.
 
-`eval/record.sh` turns a task into a terminal video: Claude Code runs interactively without the
-server (left) and with it (right), side by side and at the same time, each on its own clone of the
-repository. Each pane's title shows the real elapsed time and, at the end, the task's check;
-`summary.md` adds the tool calls from the session transcripts. It needs tmux, asciinema 3, agg and
-ffmpeg and writes an asciinema cast (for the web player), a GIF and an MP4 into `$RECORD_DIR`
-(default `~/dukehoff-recordings`):
-
-```sh
-eval/record.sh --task eval/oss-tasks/03-rename-overload --repo <commons-lang clone at rel/commons-lang-3.17.0> \
-    --dukehoff-mcp <launcher> --model claude-opus-5-5
-```
-
-Pauses longer than 2 s are shortened in the GIF and MP4 (`--idle`), so the video's length is not the
-real duration; the titles are. `--modes netbeans` records one pane, `--hints` gives the server's pane
-a `CLAUDE.md` (e.g. the hints from "Telling the agent when to use the tools").
+`eval/record.sh` records a task as a side-by-side terminal video, without and with the server (usage in the script).
 
 ## Design notes
 
