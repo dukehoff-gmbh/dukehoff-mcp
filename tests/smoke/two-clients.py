@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""Checks two clients on one workspace, as when Copilot CLI switches sessions (first user site):
+"""Checks two clients on one workspace, as when Copilot CLI switches sessions:
 client A starts and gets ready, client B starts on the same workspace, then A goes away (stdin
 closed, killed after a grace period like an MCP client does). B must keep answering. Also checks
 that a call during the first indexing returns "retry" once the wait limit (here 2 s) is reached,
