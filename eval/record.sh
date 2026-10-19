@@ -205,18 +205,33 @@ for mode in "${modes[@]}"; do
     chmod +x "$OUT/$mode.pane.sh"
 done
 
-# the session: one pane per mode, titled, no status line; the agents may not change the titles
+# the session: one pane per mode, no status line; each pane's border shows its label and its state (the
+# pane options @label, @state and @color, which the agents cannot change)
 "${TMUX_CMD[@]}" new-session -d -s rec -x "$COLS" -y "$ROWS" "$OUT/${modes[0]}.pane.sh"
 for mode in "${modes[@]:1}"; do
     "${TMUX_CMD[@]}" split-window -h -t rec "$OUT/$mode.pane.sh"
 done
 "${TMUX_CMD[@]}" select-layout -t rec even-horizontal
 "${TMUX_CMD[@]}" set -g status off \; set -g focus-events on \; set -g allow-set-title off \
-    \; set -g pane-border-status top \; set -g pane-border-format ' #{pane_title} ' \
-    \; set -g pane-border-style fg=colour240 \; set -g pane-active-border-style fg=colour240
+    \; set -g pane-border-status top \; set -g pane-border-style fg=colour240 \; set -g pane-active-border-style fg=colour240 \
+    \; set -g pane-border-format '#[bg=colour238,fg=colour255,bold] #{@label} #[bg=default] #[fg=#{@color},bold]#{@state}#[default] '
+
+# a pane's state in its border: running grey, checking yellow, correct green, anything else red
+state() {
+    local color
+    case "$3" in
+        running) color=colour250 ;;
+        checking) color=colour221 ;;
+        good) color=colour114 ;;
+        *) color=colour203 ;;
+    esac
+    "${TMUX_CMD[@]}" set -p -t "$1" @state "$2" \; set -p -t "$1" @color "$color"
+}
+
 i=0
 for mode in "${modes[@]}"; do
-    "${TMUX_CMD[@]}" select-pane -t "rec:0.$i" -T "$(label "$mode")"
+    "${TMUX_CMD[@]}" set -p -t "rec:0.$i" @label "$(label "$mode")"
+    state "rec:0.$i" "0:00" running
     i=$((i + 1))
 done
 
@@ -244,16 +259,16 @@ while :; do
         if [ ! -e "$OUT/$mode.done" ]; then
             if "${TMUX_CMD[@]}" capture-pane -p -t "$pane" 2> /dev/null | grep -q "Do you want to"; then
                 echo "$(label "$mode"): waiting for a permission prompt; allow the tool with --allow" | tee "$OUT/$mode.result"
-                "${TMUX_CMD[@]}" select-pane -t "$pane" -T "$(label "$mode") · stopped at a permission prompt"
+                state "$pane" "stopped at a permission prompt" bad
                 continue
             fi
             if [ "$now" -ge "$deadline" ]; then
                 echo "not done after $TIMEOUT minutes" > "$OUT/$mode.result"
-                "${TMUX_CMD[@]}" select-pane -t "$pane" -T "$(label "$mode") · not done after $TIMEOUT min"
+                state "$pane" "not done after $TIMEOUT min" bad
                 continue
             fi
             pending=1
-            "${TMUX_CMD[@]}" select-pane -t "$pane" -T "$(label "$mode") · $(clock $((now - start)))"
+            state "$pane" "$(clock $((now - start)))" running
             continue
         fi
         if [ ! -e "$OUT/$mode.elapsed" ]; then
@@ -265,11 +280,15 @@ while :; do
         pending=1
         elapsed=$(cat "$OUT/$mode.elapsed")
         if [ -e "$OUT/$mode.status" ]; then
-            if [ "$(cat "$OUT/$mode.status")" = 0 ]; then verdict="check: correct"; else verdict="check: FAILED"; fi
-            echo "$verdict" > "$OUT/$mode.result"
-            "${TMUX_CMD[@]}" select-pane -t "$pane" -T "$(label "$mode") · done in $(clock "$elapsed") · $verdict"
+            if [ "$(cat "$OUT/$mode.status")" = 0 ]; then
+                echo "check: correct" > "$OUT/$mode.result"
+                state "$pane" "done in $(clock "$elapsed") · ✓ correct" good
+            else
+                echo "check: FAILED" > "$OUT/$mode.result"
+                state "$pane" "done in $(clock "$elapsed") · ✗ check failed" bad
+            fi
         else
-            "${TMUX_CMD[@]}" select-pane -t "$pane" -T "$(label "$mode") · done in $(clock "$elapsed") · checking..."
+            state "$pane" "done in $(clock "$elapsed") · checking..." checking
         fi
     done
     [ "$pending" = 0 ] && break

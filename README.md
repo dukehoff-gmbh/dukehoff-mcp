@@ -13,6 +13,17 @@ semantic access to Java code: the parser, index and refactoring engine of Apache
 runs headless underneath. Its technical name, used for the launcher, the artifacts and the data
 directory, is `dukehoff-mcp`; agents see its tools under the server name `java`.
 
+![Claude Code renames a method in Apache Commons Lang, without the server on the left and with it on the right](images/demo-rename.gif)
+
+**Same model, same task, at the same time:** Claude Opus 5.5 renames one overload of
+`ClassUtils.getShortClassName` in Apache Commons Lang, leaving the other overloads and a same-named
+method of another class alone. Without the server (left) it searches with grep, edits with sed and
+compiles with Maven; with it (right) it makes one `rename` call, which also checks that everything
+still compiles. Both results are correct. In three runs this took 0:46–1:07 without and 0:18–0:25 with
+the server; shown is the run with the middle time without it. Pauses are shortened in the video, the
+times in the headers are real. [Task and check](eval/oss-tasks/03-rename-overload),
+[recording script](eval/record.sh).
+
 ## Tools
 
 | Tool | What it does |
