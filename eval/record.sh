@@ -27,16 +27,19 @@
 #   --size       the terminal of the recording (default 200x50)
 #   --idle       pauses longer than this are shortened in the GIF and MP4 (default 2); the cast keeps
 #                the real timing and the pane titles show the real elapsed time
-# Environment: RECORD_DIR work and output directory (default ~/dukehoff-record; it shows in the
-#              video, and must not lie under ~/.claude, where Claude Code refuses edits)
+# Environment: RECORD_DIR output directory (default ~/dukehoff-recordings); the panes' clones and the
+#              server's data stay in its work/ folder, which shows in the video and must not lie
+#              under ~/.claude, where Claude Code refuses edits
 # Needs: claude, tmux, asciinema (3.x), agg, ffmpeg, python3, git
-# Output: $RECORD_DIR/recordings/<time>-<task>/: recording.cast, recording.gif, recording.mp4,
+# Output: $RECORD_DIR/<time>-<task>/: recording.cast, recording.gif, recording.mp4,
 #         summary.md (real time, check, tool calls per pane), the checks and the diffs
 
 set -u
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-RECORD_DIR=${RECORD_DIR:-$HOME/dukehoff-record}
+RECORD_DIR=${RECORD_DIR:-$HOME/dukehoff-recordings}
+# fixed paths, so Claude Code's trust and the server's index stay between recordings
+WORKDIR=$RECORD_DIR/work
 TASK=
 REPO=
 WORKSPACE=.
@@ -98,7 +101,7 @@ export AWS_CREDENTIAL_PROFILES_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/n
     AWS_EC2_METADATA_DISABLED=true
 
 task=$(basename "$TASK")
-OUT=$RECORD_DIR/recordings/$(date +%Y%m%d-%H%M%S)-$task
+OUT=$RECORD_DIR/$(date +%Y%m%d-%H%M%S)-$task
 mkdir -p "$OUT"
 echo "Output: $OUT"
 SOCKET=dukehoff-record
@@ -115,8 +118,8 @@ label() {
 
 pane_dir() {
     case "$1" in
-        baseline) echo "$RECORD_DIR/a" ;;
-        netbeans) echo "$RECORD_DIR/b" ;;
+        baseline) echo "$WORKDIR/a" ;;
+        netbeans) echo "$WORKDIR/b" ;;
     esac
 }
 
@@ -174,9 +177,9 @@ for mode in "${modes[@]}"; do
         rm -f "$(pane_dir "$mode")/CLAUDE.md"
         [ -n "$HINTS" ] && cp "$HINTS" "$(pane_dir "$mode")/CLAUDE.md"
         python3 -c 'import json,sys; print(json.dumps({"mcpServers": {"java": {"command": sys.argv[1], "args": ["--data", sys.argv[2], sys.argv[3]]}}}))' \
-            "$DUKEHOFF_MCP" "$RECORD_DIR/nb-data" "$work" > "$OUT/$mode.mcp.json"
+            "$DUKEHOFF_MCP" "$WORKDIR/nb-data" "$work" > "$OUT/$mode.mcp.json"
         echo "Warming up the server for $work..."
-        python3 "$HERE/warmup.py" "$DUKEHOFF_MCP" "$RECORD_DIR/nb-data" "$work" || { echo "warm-up failed" >&2; exit 1; }
+        python3 "$HERE/warmup.py" "$DUKEHOFF_MCP" "$WORKDIR/nb-data" "$work" || { echo "warm-up failed" >&2; exit 1; }
     else
         echo '{"mcpServers": {}}' > "$OUT/$mode.mcp.json"
     fi
@@ -293,7 +296,7 @@ for mode in "${modes[@]}"; do
 done
 python3 "$HERE/record_summary.py" "$OUT" "${modes[@]}" | tee "$OUT/summary.md"
 if [[ ",$MODES," == *",netbeans,"* ]]; then
-    "$DUKEHOFF_MCP" --data "$RECORD_DIR/nb-data" --stop "$(cat "$OUT/netbeans.work")" 2>&1 | sed 's/^/    /'
+    "$DUKEHOFF_MCP" --data "$WORKDIR/nb-data" --stop "$(cat "$OUT/netbeans.work")" 2>&1 | sed 's/^/    /'
 fi
 
 echo "Rendering..."

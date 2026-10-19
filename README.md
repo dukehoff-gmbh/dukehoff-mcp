@@ -381,7 +381,8 @@ expected answers fit apache/netbeans at commit `c080a039d`.
 server (left) and with it (right), side by side and at the same time, each on its own clone of the
 repository. Each pane's title shows the real elapsed time and, at the end, the task's check;
 `summary.md` adds the tool calls from the session transcripts. It needs tmux, asciinema 3, agg and
-ffmpeg and writes an asciinema cast (for the web player), a GIF and an MP4:
+ffmpeg and writes an asciinema cast (for the web player), a GIF and an MP4 into `$RECORD_DIR`
+(default `~/dukehoff-recordings`):
 
 ```sh
 eval/record.sh --task eval/oss-tasks/03-rename-overload --repo <commons-lang clone at rel/commons-lang-3.17.0> \
