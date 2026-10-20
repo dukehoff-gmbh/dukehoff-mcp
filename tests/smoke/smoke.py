@@ -454,9 +454,18 @@ expect("No compile errors in the workspace")
 tool("rename", {"symbol": "com.acme.shop.Order#addLine(String,int)", "new_name": "1bad"})
 expect_error()
 expect("not a valid Java identifier")
+# a name in a string, as for reflection: the rename leaves it alone and its result lists it
+reflective = os.path.join(pkg, "Reflective.java")
+write(reflective, 'package com.acme.shop;\n\nclass Reflective {\n    static final String METHOD = "addLine";\n}\n')
 tool("rename", {"symbol": "com.acme.shop.Order#addLine(String,int)", "new_name": "addItem"})
 expect_ok()
 expect("Done: rename com.acme.shop.Order#addLine(java.lang.String,int) to addItem. 2 files changed")
+expect('String literals that still contain "addLine": 1 place in 1 file')
+expect("src/main/java/com/acme/shop/Reflective.java")
+expect('4: static final String METHOD = "addLine";')
+if '"addLine"' not in read(reflective):
+    fail("the rename must not change strings")
+os.remove(reflective)
 expect("+        Order order = new Order().addItem(sku, quantity);")
 expect('+class ExtraUsage { Order o = new Order().addItem("added-by-smoke-test", 7); }')
 if 'addLine("pear")' not in read(os.path.join(test_pkg, "CheckoutTest.java")):

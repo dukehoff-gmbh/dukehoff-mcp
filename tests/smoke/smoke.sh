@@ -542,10 +542,18 @@ expect '"isError":true'
 expect 'Nothing was changed'
 [ -f "$PKG/CardPayment.java" ] || fail "a failed rename must not change files"
 
+# a name in a string, as for reflection: the rename leaves it alone and its result lists it
+printf 'package com.acme.shop;\n\nclass Reflective {\n    static final String METHOD = "addLine";\n}\n' > "$PKG/Reflective.java"
+
 # only the (String,int) overload, including the usage added on disk in step 4
 tool rename '{"symbol":"com.acme.shop.Order#addLine(String,int)","new_name":"addItem"}'
 expect '"isError":false'
 expect 'Done: rename com.acme.shop.Order#addLine(java.lang.String,int) to addItem. 2 files changed'
+expect 'String literals that still contain "addLine": 1 place in 1 file'
+expect 'src/main/java/com/acme/shop/Reflective.java'
+expect '4: static final String METHOD = "addLine";'
+grep -q '"addLine"' "$PKG/Reflective.java" || fail "the rename must not change strings"
+rm "$PKG/Reflective.java"
 expect '+        Order order = new Order().addItem(sku, quantity);'
 expect '+class ExtraUsage { Order o = new Order().addItem("added-by-smoke-test", 7); }'
 expect '+        return addItem(sku, 1);'

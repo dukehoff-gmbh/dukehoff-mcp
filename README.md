@@ -33,7 +33,7 @@ times in the headers are real. [Task and check](eval/oss-tasks/03-rename-overloa
 | `find_implementations` | Subtypes of a type (all or direct) or overriding methods of a method; for a method also what it overrides or implements upwards, library declarations included |
 | `outline` | Members of a type or file: modifiers, canonical signatures, declared types, line numbers; for types of the JDK and the dependencies their public API (overloads, generics, deprecations) from the class files |
 | `diagnostics` | Compile errors (optionally warnings) of given files or the whole workspace, without a build |
-| `rename` | Renames a type, method or field with the refactoring engine; writes to disk, returns a unified diff |
+| `rename` | Renames a type, method or field with the refactoring engine; writes to disk, returns a unified diff and, since strings stay unchanged as in the IDE, the string literals that still contain the old name (reflection, names used as data) |
 | `move` | Moves a top-level class to another package, updating package declaration, imports and references |
 | `change_signature` | Adds, removes, reorders, renames or retypes parameters, or changes name, return type or visibility of a method; updates callers and overriders |
 | `safe_delete` | Deletes a type or member only if it is unused; otherwise lists the blocking usages |
