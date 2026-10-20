@@ -944,3 +944,15 @@ test fixture has a JAXB class since.
 places in one test (`AtomicInitializerNonObjectTest`), both `new Integer(0)` -> `Integer.valueOf(0)`.
 That test may rely on a fresh instance; `valueOf` returns a cached one. The pack's notes and
 description now say so: keep `new Integer(...)` by hand where code relies on object identity.
+
+## 2026-10-20: the compile check after a refactoring that breaks callers
+
+What the README says about the compile check after refactorings, measured on Commons Lang 3.17.0 with
+the runtime (a warm index, one call through MCP, no agent): `change_signature` with
+`symbol: org.apache.commons.lang3.ArrayUtils#isEmpty(Object[])` and `visibility: private`. The
+refactoring changes one file (`ArrayUtils.java`); its result ends with "Compile check: 14 new errors
+after the change", every one in a caller it did not touch (such as `StringUtils`), each with javac's
+message ("isEmpty(Object[]) has private access in ArrayUtils" among the candidate overloads). 46.5 s
+for the whole call, most of it the refactoring itself; the same case measured during development
+(2026-10-05) took 43 s for the refactoring and 3.7 s for the check. Without the check an agent learns
+this only from its next build.

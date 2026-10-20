@@ -43,7 +43,10 @@ times in the headers are real. [Task and check](eval/oss-tasks/03-rename-overloa
 | `workspace_status` | Opened projects, source roots, indexing state |
 
 All refactoring tools write their changes to disk and return warnings plus a unified diff (`git diff`
-format). Fatal problems stop them before anything changes.
+format). Fatal problems stop them before anything changes. Afterwards they check for compile errors
+the change introduced, also in files it did not touch, and report only those: making Apache Commons
+Lang's `ArrayUtils.isEmpty(Object[])` private with `change_signature` changes one file and reports the
+14 new compile errors in callers it did not touch, such as `StringUtils` (47 s for the whole call).
 
 They write only inside the workspace (in an IDE: the open projects), like an agent harness that treats
 everything outside the session's folder as external. A refactoring that would also change a file
