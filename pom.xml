@@ -175,6 +175,14 @@
                                 <exclude>**/.vscodeignore</exclude>
                                 <exclude>**/*.png</exclude>
                                 <exclude>**/*.svg</exclude>
+                                <!-- images, video and fonts of the README and the product page (site/) -->
+                                <exclude>**/*.gif</exclude>
+                                <exclude>**/*.jpg</exclude>
+                                <exclude>**/*.webm</exclude>
+                                <exclude>**/*.mp4</exclude>
+                                <exclude>**/*.woff2</exclude>
+                                <!-- the fonts' SIL Open Font License texts, shipped with them unchanged -->
+                                <exclude>site/assets/fonts/LICENSE-*</exclude>
                                 <!-- internal working notes, not part of the published repository -->
                                 <exclude>CLAUDE.md</exclude>
                                 <!-- third-party license texts and the generated inventory -->
