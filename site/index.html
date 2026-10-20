@@ -1,0 +1,212 @@
+<!doctype html>
+<!--
+
+    Copyright 2026 Dukehoff GmbH
+    SPDX-License-Identifier: Apache-2.0
+
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dukehoff MCP for Java: IDE tools for coding agents</title>
+<meta name="description" content="The parser, index and refactoring engine of Apache NetBeans as MCP tools for Claude Code, GitHub Copilot, Codex and Cursor: semantic usages, refactorings in one call, type-aware migrations and a test debugger. Free and open source.">
+<meta property="og:title" content="Dukehoff MCP for Java">
+<meta property="og:description" content="IDE tools for coding agents: semantic usages, refactorings in one call, type-aware migrations and a test debugger. Apache 2.0, runs locally.">
+<meta property="og:image" content="images/social-preview.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="wordmark" href="./"><img class="product-logo" src="images/logo.svg" alt="" width="36" height="36"><span>Dukehoff MCP for Java</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#where">Where it runs</a>
+      <a href="#tools">Tools</a>
+      <a href="#results">Results</a>
+      <a href="#install">Install</a>
+      <a class="btn btn-primary" href="https://github.com/dukehoff-gmbh/dukehoff-mcp">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">apache 2.0 · runs locally · jdk 17+</p>
+    <h1>Your coding agent, with a Java IDE behind it.</h1>
+    <p class="hero-lead">The parser, index and refactoring engine of Apache NetBeans as MCP tools: usages that grep gets wrong, refactorings in one call, type-aware migrations and a test debugger. For Claude Code, GitHub Copilot, Codex, Cursor and any other MCP client.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#install">Install</a>
+      <a class="btn btn-secondary" href="https://github.com/dukehoff-gmbh/dukehoff-mcp">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<section aria-label="Demo">
+  <div class="wrap">
+    <figure class="shot demo">
+      <video controls muted loop playsinline preload="metadata" poster="media/demo-rename-poster.jpg" width="1600" height="940">
+        <source src="media/demo-rename.webm" type="video/webm">
+        <source src="media/demo-rename.mp4" type="video/mp4">
+        Claude Code renames a method in Apache Commons Lang, without the server on the left and with it on the right.
+      </video>
+      <figcaption><strong>Same model, same task, at the same time.</strong> Claude Opus 5.5 renames one overload of <code>ClassUtils.getShortClassName</code> in Apache Commons Lang, leaving the other overloads and a same-named method of another class alone. Without the server (left) it searches with grep, edits with sed and compiles with Maven; with it (right) it makes one <code>rename</code> call, which also checks that everything still compiles. Both results are correct. In three runs this took 0:46–1:07 without and 0:18–0:25 with the server; pauses are shortened, the times in the headers are real. <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp/tree/main/eval/oss-tasks/03-rename-overload">Task and check</a> · <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp/blob/main/eval/record.sh">Recording script</a></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="results" style="margin-top: clamp(3rem, 7vw, 5.5rem);">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">measured</p>
+      <h2>Measured, with the method published</h2>
+      <p>Agent with and without the server on the same tasks. All numbers from Claude Code with Claude models.</p>
+    </div>
+    <dl class="results">
+      <div><dt>9 vs. 51<span>turns</span></dt><dd><strong>A rename across 22 files is one call instead of a read-and-edit loop.</strong><span class="setup">NetBeans' own java/ folder, Claude Opus 5.5, 3 sessions per mode; cost $0.22 instead of $0.56.</span></dd></div>
+      <div><dt>−77 %<span>cost</span></dt><dd><strong>Four cross-file tasks on Apache Commons Lang, with the product runtime.</strong><span class="setup">Claude Sonnet 5, 3 sessions per task and mode, cost priced at Copilot credit rates; 69 % fewer turns, 66 % less time.</span></dd></div>
+      <div><dt>−40 %<span>turns</span></dt><dd><strong>A modernization of 144 places, 60 of them look-alikes that must stay.</strong><span class="setup">Claude Sonnet 5.5 told to use apply_rule, against scripting, 3 sessions each; sed on one of the patterns broke 12 look-alikes and the build.</span></dd></div>
+    </dl>
+    <p class="source">Harness, tasks and raw results: <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp/blob/main/eval/RESULTS.md">eval/RESULTS.md</a>.</p>
+  </div>
+</section>
+
+<section class="section" id="where">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Works where you already work</h2>
+      <p>One server for terminal agents, VS Code and NetBeans, on Windows, macOS and Linux; CI runs the end-to-end smoke test on all three.</p>
+    </div>
+    <div class="shots">
+      <figure class="shot"><div class="shot-slot">[screenshot: Claude Code, rename in a terminal]</div><figcaption><strong>Claude Code</strong><span class="os">macos</span></figcaption></figure>
+      <figure class="shot"><div class="shot-slot">[screenshot: VS Code, Copilot agent mode and the refactoring review]</div><figcaption><strong>VS Code + GitHub Copilot</strong><span class="os">windows</span></figcaption></figure>
+      <figure class="shot"><div class="shot-slot">[screenshot: GitHub Copilot CLI in PowerShell]</div><figcaption><strong>GitHub Copilot CLI</strong><span class="os">windows</span></figcaption></figure>
+      <figure class="shot"><div class="shot-slot">[screenshot: NetBeans with the plugin, an agent in a terminal beside it]</div><figcaption><strong>Apache NetBeans</strong><span class="os">macos</span></figcaption></figure>
+      <figure class="shot"><div class="shot-slot">[screenshot: Codex CLI]</div><figcaption><strong>Codex CLI, Cursor, omp</strong><span class="os">linux</span></figcaption></figure>
+      <figure class="shot"><div class="config-card"><span class="c">dukehoff-mcp --config</span><span>claude · copilot · vscode</span><span>cursor · codex · omp</span><span class="c">prints the registration</span></div><figcaption><strong>Any MCP client</strong> · stdio, tools only, plain-text results</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tools">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What your agent gets</h2>
+      <p>Thirteen tools, addressed by symbol, not by cursor position. The agent keeps editing files itself; the server answers what text search cannot and makes the changes that are error-prone as text edits.</p>
+    </div>
+    <ul class="offers">
+      <li><h3>Refactor</h3><p>Rename, move, change a signature, safe delete and inline, for every caller and override. Written to disk and returned as one unified diff.</p><pre class="calls"><span class="tool">rename</span> symbol: com.acme.Foo#bar(String)  new_name: send</pre></li>
+      <li><h3>Migrate</h3><p>Structural search and replace with NetBeans' Jackpot rules: matches types, not text, with a dry run first. Tested packs for JUnit 4 to 5, javax to jakarta and Java modernization.</p><pre class="calls"><span class="tool">apply_rule</span> pack: jakarta</pre></li>
+      <li><h3>Debug</h3><p>Runs a JUnit test under the debugger and stops once, at a method, a line or a thrown exception. Returns the stack, the locals and the values of given expressions, instead of a println loop.</p><pre class="calls"><span class="tool">debug</span> stop_at: com.acme.Billing#total()</pre></li>
+      <li><h3>Navigate</h3><p>Semantic usages, grouped by file or by calling method; implementations with the override chain; outlines of your types and of the JDK and dependency APIs.</p><pre class="calls"><span class="tool">find_usages</span> symbol: com.acme.Foo#bar(String)  group_by: caller</pre></li>
+      <li><h3>Check</h3><p>Compile errors of given files or the whole workspace, without a build.</p><pre class="calls"><span class="tool">diagnostics</span></pre></li>
+      <li><h3>Review and stay in control</h3><p>In VS Code every refactoring shows with Review (a multi-file diff) and Undo. Writes stay inside the workspace unless you allow a folder.</p><div class="diff"><div class="del">public static String getShortClassName(Class&lt;?&gt; cls)</div><div class="add">public static String shortClassName(Class&lt;?&gt; cls)</div></div></li>
+    </ul>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap split">
+    <div>
+      <h2>How it works</h2>
+      <ol class="stack">
+        <li><strong>Your agent</strong> <span>· Claude Code, Copilot, Codex, Cursor …</span></li>
+        <li class="via">↓ mcp over stdio</li>
+        <li><strong>dukehoff-mcp launcher</strong> <span>· connects to the workspace's server</span></li>
+        <li class="via">↓ local socket</li>
+        <li class="core"><strong>Headless Apache NetBeans</strong> <span>· one per workspace, its index kept warm between sessions; in VS Code or NetBeans the IDE's own</span></li>
+        <li class="via">↓ reads and refactors</li>
+        <li><strong>Your Maven, Gradle or Ant project</strong></li>
+      </ol>
+      <p class="muted">Everything runs on your machine: no account, no cloud index. No code leaves the computer apart from what your agent itself sends to its model.</p>
+    </div>
+    <div>
+      <h2>Where it doesn't help</h2>
+      <ul class="checklist">
+        <li><strong>Everyday tasks.</strong> A small feature, a bug fix, a new test: agents do as well without it. In 27 such sessions with the server offered, they made no call and paid nothing extra.</li>
+        <li><strong>Agents need a nudge.</strong> They pick the tools reliably once your CLAUDE.md or AGENTS.md has a short section; the VS Code extension offers it.</li>
+        <li><strong>First start of a large project.</strong> Indexing takes minutes, about 6.5 for 584 Maven modules; after that the index stays warm.</li>
+        <li><strong>Java only.</strong> No Kotlin.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Install</h2>
+      <p>VS Code and NetBeans bring the server along. For terminal agents, download the runtime from the <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp/releases">releases</a> (about 270 MB; needs a JDK 17 or newer).</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Choose your client" data-tabs hidden>
+      <button type="button" role="tab" data-tab="vscode" aria-selected="true">VS Code + Copilot</button>
+      <button type="button" role="tab" data-tab="claude" aria-selected="false">Claude Code</button>
+      <button type="button" role="tab" data-tab="copilot" aria-selected="false">Copilot CLI</button>
+      <button type="button" role="tab" data-tab="codex" aria-selected="false">Codex CLI</button>
+      <button type="button" role="tab" data-tab="netbeans" aria-selected="false">NetBeans</button>
+    </div>
+    <div class="panel" role="tabpanel" data-panel="vscode">
+      <h3>VS Code + GitHub Copilot</h3>
+      <p>Install <a href="https://marketplace.visualstudio.com/items?itemName=dukehoff.dukehoff-mcp-java">Dukehoff MCP for Java</a> from the Marketplace. It brings the Apache NetBeans Language Server along; the tools appear in Copilot's agent mode as the server <code>java</code>.</p>
+      <pre class="codeblock"><code>code --install-extension dukehoff.dukehoff-mcp-java</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" data-panel="claude">
+      <h3>Claude Code</h3>
+      <p>Unpack the runtime, then register it:</p>
+      <pre class="codeblock"><code>tar xzf dukehoff-mcp-&lt;version&gt;.tar.gz -C /opt
+claude mcp add --scope user java -- /opt/dukehoffmcp/bin/dukehoff-mcp</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" data-panel="copilot">
+      <h3>GitHub Copilot CLI</h3>
+      <p>Add the runtime to <code>~/.copilot/mcp-config.json</code>, then start <code>copilot</code> in your project:</p>
+      <pre class="codeblock"><code>{ "mcpServers": { "java": { "type": "local",
+    "command": "/opt/dukehoffmcp/bin/dukehoff-mcp", "args": [], "tools": ["*"] } } }</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" data-panel="codex">
+      <h3>Codex CLI</h3>
+      <p>Add the runtime to <code>~/.codex/config.toml</code>:</p>
+      <pre class="codeblock"><code>[mcp_servers.java]
+command = "/opt/dukehoffmcp/bin/dukehoff-mcp"
+args = []
+startup_timeout_sec = 120</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" data-panel="netbeans">
+      <h3>Apache NetBeans</h3>
+      <p>Install the plugin from the releases in NetBeans 31 or newer (Tools › Plugins › Downloaded), then let a terminal agent use the running IDE:</p>
+      <pre class="codeblock"><code>java -jar dukehoff-mcp-launcher-&lt;version&gt;.jar --config claude --ide</code></pre>
+    </div>
+    <p class="source">Windows, Cursor, omp and every option: <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp#installation">README</a>.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap cta">
+    <div>
+      <h2>Using it in your team?</h2>
+      <p>Dukehoff GmbH, the company behind the tool, helps with the setup, writes migration rules for your own frameworks and APIs, and trains your team.</p>
+    </div>
+    <a class="btn btn-primary" href="https://dukehoff.com/en/contact/">Talk to us</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <span>© 2026 Dukehoff GmbH · Apache License 2.0</span>
+    <a href="https://github.com/dukehoff-gmbh/dukehoff-mcp">GitHub</a>
+    <a href="https://dukehoff.com/en/imprint/">Imprint</a>
+    <a href="https://dukehoff.com/en/privacy/">Privacy</a>
+    <span class="note">Apache NetBeans is a trademark of the Apache Software Foundation. No cookies, no tracking.</span>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
