@@ -11,11 +11,23 @@ expected) help most; pull requests are welcome too.
 
 ## Contributor license agreement
 
-Before we can merge your first pull request, you (and, for work done for an employer, your employer)
-sign a contributor license agreement modeled on the Apache Software Foundation's ICLA/CCLA. You keep
-the copyright of your contribution; the agreement grants Dukehoff GmbH the rights to distribute it
-under the Apache License 2.0 and in other products. You will be asked to sign it on your first pull
-request.
+Before we can merge your first pull request, you sign a contributor license agreement (CLA) with
+Dukehoff GmbH, based on the standard [Harmony agreements](https://www.harmonyagreements.org/): the
+[individual](https://github.com/dukehoff-gmbh/cla/blob/main/individual-cla.md) or, for work done for
+an employer, the [entity](https://github.com/dukehoff-gmbh/cla/blob/main/entity-cla.md) agreement
+(details in [dukehoff-gmbh/cla](https://github.com/dukehoff-gmbh/cla)).
+
+- **You keep the copyright** of your contribution and may use it as you like. You grant Dukehoff GmbH
+  a non-exclusive license to distribute it, also under other licenses than the Apache License 2.0;
+  in return, your contribution always stays available under the Apache License 2.0.
+- **One signature covers all projects** of Dukehoff GmbH.
+- **Signing:** on your first pull request a bot comments with the link to the agreement. Read it, then
+  post the sentence the bot names as a comment; `recheck` checks again.
+- **Work done for an employer:** your employer signs the entity version first (an authorized
+  signatory, by email to opensource@dukehoff.com); we then add you.
+- **Your data:** we keep your GitHub login and id, the pull request and the time of signing, in a
+  private repository of Dukehoff GmbH, as the record of the agreement, for as long as we distribute
+  your contribution.
 
 ## Building and testing
 
