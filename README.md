@@ -237,7 +237,8 @@ no project there is open, the tools say so; open it in NetBeans. NetBeans announ
 `~/.dukehoff-mcp/ide/`, where the server's Unix domain socket lies next to its announcement (in a
 temporary folder instead if that path is longer than about 100 bytes), and the project at the same
 path as in NetBeans. A separate process namespace is fine. For [lince](https://github.com/RisorseArtificiali/lince),
-for example: `home_ro_dirs = [".dukehoff-mcp"]` under `[sandbox]`. The refactorings are done by NetBeans
+for example: `home_ro_dirs = [".dukehoff-mcp"]` under `[sandbox]`. You may also need to allow for PIDs to be visible
+`unshare_pid = false` under `[security]`. The refactorings are done by NetBeans
 itself, outside the sandbox; they write only inside the agent's folder unless more is allowed (see above).
 
 ### Telling the agent when to use the tools
