@@ -42,7 +42,9 @@ public final class RenameTool implements Tool {
                 + "references are updated. Symbol syntax: com.acme.Foo, com.acme.Foo#bar(String,int), "
                 + "com.acme.Foo#field. If the rename would break the code (name clash, ...) nothing is "
                 + "changed and the problem is reported. Output: warnings, then a unified diff of all changes "
-                + "(use git to review or revert)." + RefactoringRunner.COMPILE_CHECK;
+                + "(use git to review or revert)." + RefactoringRunner.COMPILE_CHECK + " Like the IDE's rename, it "
+                + "does not change strings; the result lists the string literals that still contain the old name "
+                + "(reflection, names used as data), so no grep for them is needed.";
     }
 
     @Override
@@ -118,12 +120,18 @@ public final class RenameTool implements Tool {
         refactoring.getContext().add(JavaRefactoringUtils.getClasspathInfoFor(symbol.file()));
         refactoring.setNewName(newName);
 
-        return new RefactoringRunner(workspace, roots, refactoring,
+        String oldName = symbol.simpleName();
+        Result result = new RefactoringRunner(workspace, roots, refactoring,
                 "rename " + symbol.signature() + " to " + newName)
                 .involving(symbol.file())
                 // a renamed public class renames its file
                 .relocatingWith(fo -> fo.getParent() != null ? fo.getParent().getFileObject(newName, fo.getExt()) : null)
                 .allowingOutside(arguments)
                 .run(maxDiffLines);
+        if (result.error()) {
+            return result;
+        }
+        // what neither the rename nor the compile check covers: the old name in strings
+        return Result.ok(result.text() + StringMentions.report(StringMentions.find(roots, oldName, workspace::displayPath), oldName));
     }
 }
