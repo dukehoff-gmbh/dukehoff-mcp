@@ -23,6 +23,7 @@ const ASKED = 'agentHints.asked';
 export const SECTION = `${START}
 ## Java code
 
+These hints apply when the Java MCP tools (server \`java\`) are connected; without them, ignore this section.
 To rename, move or delete Java code or change a method's signature, use the Java MCP tools
 (\`rename\`, \`move\`, \`change_signature\`, \`safe_delete\`) instead of editing files: one call updates
 every reference, also in other modules, and checks that everything still compiles.

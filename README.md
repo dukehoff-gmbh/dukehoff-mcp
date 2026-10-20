@@ -254,6 +254,7 @@ turns; the VS Code extension offers to add it (command "Add Java tool hints to A
 ```markdown
 ## Java code
 
+These hints apply when the Java MCP tools (server `java`) are connected; without them, ignore this section.
 To rename, move or delete Java code or change a method's signature, use the Java MCP tools
 (`rename`, `move`, `change_signature`, `safe_delete`) instead of editing files: one call updates
 every reference, also in other modules, and checks that everything still compiles.
@@ -266,6 +267,18 @@ For JUnit 4 to 5, javax to jakarta or a Java modernization, start with `apply_ru
 Before calling a method of the JDK or a dependency whose exact signature you are unsure of, look it
 up with `outline`.
 ```
+
+Its first line makes the section safe to commit for a team: agents of colleagues without the server
+skip it. To keep it to yourself instead, put it where only your agent reads it; these files apply to
+all your projects, which the first line covers as well:
+
+| Client | Personal instructions |
+|---|---|
+| Claude Code | `~/.claude/CLAUDE.md`; it keeps the project's `AGENTS.md` loading. (A `CLAUDE.local.md` in the project would stop Claude Code from reading `AGENTS.md` unless it imports it with `@AGENTS.md`.) |
+| Codex CLI | `~/.codex/AGENTS.md` |
+| GitHub Copilot CLI | `~/.copilot/copilot-instructions.md` |
+| VS Code with Copilot | an instructions file in your user profile (command "Chat: New Instructions File", location "User Data") |
+| Cursor | User Rules in Cursor's settings |
 
 ### Choosing the tools
 
