@@ -83,8 +83,10 @@ the parent pom), where the NetBeans Plugin Portal takes it from. That needs the 
 namespace `com.dukehoff`) and `MAVEN_GPG_PRIVATE_KEY` and `MAVEN_GPG_PASSPHRASE` (the release signing
 key); without them the step is skipped. The upload waits in the Central Portal for **Publish** unless
 the repository variable `CENTRAL_AUTO_PUBLISH` is `true`. To check the bundle locally without
-uploading: `mvn -P central -pl server -am deploy -DskipTests -Dcentral.skipPublishing=true` (the bundle
-is in `target/central-publishing`; it is built only for a release version, not a `-SNAPSHOT`).
+uploading: `mvn -P central -pl server -am deploy -DskipTests -Dcentral.skipUpload=true` (the bundle
+is in `target/central-publishing`; it is built only for a release version, not a `-SNAPSHOT`). Every
+entry must lie in a version folder (`com/dukehoff/mcp/<artifact>/<version>/`); anything next to them
+makes Central reject the bundle.
 
 ## Reporting security issues
 

@@ -232,12 +232,12 @@
         <!-- Maven Central (the NetBeans Plugin Portal takes plugins only from there): sources, Javadoc and
              GPG signatures, uploaded through the Central Portal. The release workflow runs
              mvn -P central -pl server -am deploy, so only this parent and the NetBeans plugin go there.
-             -Dcentral.skipPublishing=true builds the bundle (target/central-publishing) without uploading;
+             -Dcentral.skipUpload=true builds the bundle (target/central-publishing) without uploading;
              -Dcentral.autoPublish=true publishes without the manual step in the portal. -->
         <profile>
             <id>central</id>
             <properties>
-                <central.skipPublishing>false</central.skipPublishing>
+                <central.skipUpload>false</central.skipUpload>
                 <central.autoPublish>false</central.autoPublish>
             </properties>
             <build>
@@ -296,11 +296,14 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.8.0</version>
+                        <!-- 0.12.0 or newer: before, with Maven 3.10 (GitHub's runners) the bundle kept
+                             maven-metadata-local.xml next to the version folders and Central rejected it
+                             ("Bundle has content that does NOT have a .pom file") -->
+                        <version>0.12.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <skipPublishing>${central.skipPublishing}</skipPublishing>
+                            <skipUpload>${central.skipUpload}</skipUpload>
                             <autoPublish>${central.autoPublish}</autoPublish>
                             <waitUntil>validated</waitUntil>
                         </configuration>
