@@ -29,7 +29,7 @@
 # 30 minutes without a client); this script then hands over to bin/dukehoff-mcp.jar, which connects to it
 # and starts it when needed. In a NetBeans installation with the module, each session starts its own.
 #   --config <client>  print the configuration that registers this server with a client
-#                      (claude, copilot, vscode, cursor, codex, omp), then exit
+#                      (claude, copilot, vscode, cursor, codex, omp, bob), then exit
 #   --version          print the version, then exit
 #
 # When it starts the server, stdout carries the MCP protocol, so this script then only writes to stderr.
@@ -67,7 +67,7 @@ while [ $# -gt 0 ]; do
         --allow-writes) [ $# -ge 2 ] || die "--allow-writes needs a list of folders"; ALLOW_WRITES=$2; shift 2 ;;
         --no-daemon) NO_DAEMON=1; shift ;;
         --ide) IDE=1; shift ;;
-        --config) [ $# -ge 2 ] || die "--config needs a client: claude, copilot, vscode, cursor, codex or omp"; CONFIG=$2; shift 2 ;;
+        --config) [ $# -ge 2 ] || die "--config needs a client: claude, copilot, vscode, cursor, codex, omp or bob"; CONFIG=$2; shift 2 ;;
         --version) cat "$(cd "$(dirname "$0")" && pwd)/../VERSION" 2> /dev/null || echo "dukehoff-mcp (version unknown)"; exit 0 ;;
         -h|--help) sed -n '/^# Starts/,/^# stdout/p' "$0" >&2; exit 0 ;;
         --) shift; EXTRA=("$@"); break ;;
@@ -123,7 +123,14 @@ args = [$args]
 startup_timeout_sec = 120
 EOF
         ;;
-        *) die "unknown client $CONFIG (claude, copilot, vscode, cursor, codex, omp)" ;;
+        bob) cat << EOF
+# IBM Bob, for all your projects:
+bob mcp add java --scope global -- "$self"$cli
+# or, shared with the team, .mcp.json in the project:
+{ "mcpServers": { "java": { "command": "$self", "args": [$args] } } }
+EOF
+        ;;
+        *) die "unknown client $CONFIG (claude, copilot, vscode, cursor, codex, omp, bob)" ;;
     esac
     exit 0
 fi

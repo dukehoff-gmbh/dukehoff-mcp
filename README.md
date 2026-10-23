@@ -112,7 +112,7 @@ workspace's server (see What to expect). Let the launcher print the configuratio
 absolute path:
 
 ```sh
-/opt/dukehoffmcp/bin/dukehoff-mcp --config claude                      # also: copilot, vscode, cursor, codex, omp
+/opt/dukehoffmcp/bin/dukehoff-mcp --config claude                      # also: copilot, vscode, cursor, codex, omp, bob
 java -jar C:\tools\dukehoffmcp\bin\dukehoff-mcp.jar --config vscode    # Windows: java.exe -jar dukehoff-mcp.jar
 ```
 
