@@ -107,6 +107,8 @@ public class LauncherTest {
                 "\"args\": [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"core,migrate\", \"${workspaceFolder}\"]"));
         assertTrue(Launcher.config("claude", java, jar, "all").contains("-jar \"" + jar + "\" --tools all\n"));
         assertTrue(Launcher.config("codex", java, jar, "core").contains("args = [\"-jar\", \"" + json(jar) + "\", \"--tools\", \"core\"]"));
+        assertTrue(Launcher.config("bob", java, jar, "core").contains(
+                "bob mcp add java --scope global -- \"" + java + "\" -jar \"" + jar + "\" --tools core\n"));
     }
 
     @Test
