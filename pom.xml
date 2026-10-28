@@ -59,6 +59,8 @@
     <properties>
         <!-- the NetBeans release the module is compiled against and the runtime is built from -->
         <netbeans.version>RELEASE310</netbeans.version>
+        <!-- the plugin Lombok for nb-javac, in the runtime and the VS Code extension -->
+        <lombok-nb-javac.version>1.0.0</lombok-nb-javac.version>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

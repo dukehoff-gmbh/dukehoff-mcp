@@ -88,6 +88,10 @@ is in `target/central-publishing`; it is built only for a release version, not a
 entry must lie in a version folder (`com/dukehoff/mcp/<artifact>/<version>/`); anything next to them
 makes Central reject the bundle.
 
+The runtime and the VS Code extension include the plugin Lombok for nb-javac
+(`com.dukehoff.netbeans:lombok-nb-javac`, from its own repository): `lombok-nb-javac.version` in `pom.xml`
+must name a version released on Maven Central before a release.
+
 ## Reporting security issues
 
 Please do not open a public issue for a vulnerability; see [SECURITY.md](SECURITY.md).

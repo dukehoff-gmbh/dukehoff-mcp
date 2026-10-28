@@ -23,11 +23,6 @@
         rename, change signature, move, safe delete, Jackpot rewrite rules and a one-call test debugger. The
         same module runs the headless server and the VS Code extension.</description>
 
-    <properties>
-        <!-- the Lombok dukehoff-mcp uses for analysis when a project's is too old for nb-javac (LombokProcessorPath);
-             NetBeans 31 (nb-javac 27) needs 1.18.48 or newer -->
-        <lombok.version>1.18.48</lombok.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -173,37 +168,7 @@
                     <author>Dukehoff GmbH</author>
                     <licenseName>Apache License, Version 2.0</licenseName>
                     <licenseFile>${project.basedir}/../LICENSE</licenseFile>
-                    <!-- Lombok for NetBeans' processor path (LombokProcessorPath), not on the module's classpath -->
-                    <nbmResources>
-                        <nbmResource>
-                            <directory>${project.build.directory}/nbm-files</directory>
-                        </nbmResource>
-                    </nbmResources>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>bundled-lombok</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                    <version>${lombok.version}</version>
-                                    <outputDirectory>${project.build.directory}/nbm-files/modules/ext/dukehoff-mcp</outputDirectory>
-                                    <destFileName>lombok.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

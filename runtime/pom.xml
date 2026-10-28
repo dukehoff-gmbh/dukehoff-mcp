@@ -36,6 +36,14 @@
             <version>${project.version}</version>
             <type>nbm</type>
         </dependency>
+        <!-- Lombok for nb-javac (github.com/dukehoff-gmbh/lombok-nb-javac): a current Lombok for NetBeans'
+             analysis when a project's Lombok is too old for nb-javac -->
+        <dependency>
+            <groupId>com.dukehoff.netbeans</groupId>
+            <artifactId>lombok-nb-javac</artifactId>
+            <version>${lombok-nb-javac.version}</version>
+            <type>nbm</type>
+        </dependency>
         <dependency>
             <groupId>org.netbeans.cluster</groupId>
             <artifactId>platform</artifactId>

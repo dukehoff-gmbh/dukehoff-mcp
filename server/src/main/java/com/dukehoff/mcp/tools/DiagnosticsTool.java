@@ -166,6 +166,10 @@ public final class DiagnosticsTool implements Tool {
         if (problems.length() > 0) {
             sb.append('\n').append(problems);
         }
+        String lombok = errors > 0 ? OldLombok.note(files) : null;
+        if (lombok != null) {
+            sb.append('\n').append(lombok).append('\n');
+        }
         return Result.ok(sb.toString());
     }
 
