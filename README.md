@@ -204,6 +204,18 @@ args = []
 startup_timeout_sec = 120
 ```
 
+### IBM Bob
+
+```sh
+bob mcp add java --scope global -- /opt/dukehoffmcp/bin/dukehoff-mcp
+```
+
+or, shared with the team, `.bob/mcp.json` in the project:
+
+```json
+{ "mcpServers": { "java": { "command": "/opt/dukehoffmcp/bin/dukehoff-mcp", "args": [] } } }
+```
+
 ### Cursor, omp (Oh My Pi)
 
 `.cursor/mcp.json` or `.omp/mcp.json` in the project (omp also reads `.mcp.json`, `.cursor/` and
