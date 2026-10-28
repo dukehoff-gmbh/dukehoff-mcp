@@ -55,7 +55,7 @@ public final class Launcher {
             "  --allow-writes <l> comma separated folders refactorings may change besides the workspace;",
             "                     other files outside it only when a call allows them (after asking the user)",
             "  --config <client>  print the configuration that registers this server with a client",
-            "                     (claude, copilot, vscode, cursor, codex, omp), then exit",
+            "                     (claude, copilot, vscode, cursor, codex, omp, bob), then exit",
             "  --version          print the version, then exit",
             "  --ide              use the NetBeans IDE that runs with the Dukehoff MCP plugin: its open projects",
             "                     in the workspace folder, its index; starts nothing",
@@ -133,7 +133,7 @@ public final class Launcher {
                 case "--no-daemon" -> o.noDaemon = true;
                 case "--tools" -> o.tools = value(args, ++i, a);
                 case "--allow-writes" -> o.allowWrites = value(args, ++i, a);
-                case "--config" -> o.config = value(args, ++i, "--config needs a client: claude, copilot, vscode, cursor, codex or omp;");
+                case "--config" -> o.config = value(args, ++i, "--config needs a client: claude, copilot, vscode, cursor, codex, omp or bob;");
                 case "--version" -> o.version = true;
                 case "--ide" -> o.ide = true;
                 case "--connect" -> o.connect = Paths.get(value(args, ++i, a));
@@ -515,7 +515,11 @@ public final class Launcher {
                     + a + "\"" + t + "], \"tools\": [\"*\"] } } }\n";
             case "codex" -> "# Codex CLI: ~/.codex/config.toml\n[mcp_servers.java]\ncommand = \"" + j
                     + "\"\nargs = [\"-jar\", \"" + a + "\"" + t + "]\nstartup_timeout_sec = 120\n";
-            default -> throw new UsageException("unknown client " + client + " (claude, copilot, vscode, cursor, codex, omp)");
+            case "bob" -> "# IBM Bob, for all your projects:\n"
+                    + "bob mcp add java --scope global -- \"" + java + "\" -jar \"" + jar + "\"" + cli + "\n"
+                    + "# or, shared with the team, .bob/mcp.json in the project:\n"
+                    + "{ \"mcpServers\": { \"java\": { \"command\": \"" + j + "\", \"args\": [\"-jar\", \"" + a + "\"" + t + "] } } }\n";
+            default -> throw new UsageException("unknown client " + client + " (claude, copilot, vscode, cursor, codex, omp, bob)");
         };
     }
 
