@@ -250,7 +250,7 @@ extra/modules/com-google-guava-failureaccess.jar                      Apache-2.0
 extra/modules/com-google-guava.jar                                    Apache-2.0
 extra/modules/com-googlecode-javaewah-JavaEWAH.jar                    Apache-2.0
 extra/modules/com-jcraft-jzlib.jar                                    BSD-jzlib
-extra/modules/ext/dukehoff-mcp/lombok.jar                             MIT-lombok
+extra/modules/ext/lombok-nb-javac/lombok.jar                          MIT-lombok
 extra/modules/net-java-html-boot-script.jar                           Apache-2.0
 extra/modules/net-java-html-geo.jar                                   Apache-2.0
 extra/modules/net-java-html-sound.jar                                 Apache-2.0

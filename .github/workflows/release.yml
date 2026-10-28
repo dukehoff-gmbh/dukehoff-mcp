@@ -87,7 +87,8 @@ jobs:
           (Extensions > ... > Install from VSIX), which brings the Apache NetBeans extension along; the tools
           appear in Copilot's agent mode as the server Java. For NetBeans: install
           \`dukehoff-mcp-netbeans-${VERSION}.nbm\` (Tools > Plugins > Downloaded); agents in a terminal reach the
-          running IDE with \`java -jar dukehoff-mcp-launcher-${VERSION}.jar --ide\` (see the README).
+          running IDE with \`java -jar dukehoff-mcp-launcher-${VERSION}.jar --ide\` (see the README). Projects on
+          Lombok 1.18.46 or older also need the plugin [Lombok for nb-javac](https://github.com/dukehoff-gmbh/lombok-nb-javac/releases).
           \`SHA256SUMS\` has the checksums of all files.
           EOF
           prerelease=; case "$VERSION" in *-*) prerelease=--prerelease ;; esac

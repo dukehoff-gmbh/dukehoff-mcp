@@ -61,7 +61,9 @@ KNOWN = [
     (r"org-apache-commons-commons_io\.jar$", "Apache-2.0", "Apache Commons IO"),
     (r"org-apache-xml-resolver\.jar$", "Apache-2.0", "Apache XML Commons Resolver"),
     (r"net-java-html-boot\.jar$", "Apache-2.0", "HTML/Java API (Apache NetBeans html4j)"),
-    (r"/modules/ext/dukehoff-mcp/lombok\.jar$", "MIT-lombok", "Project Lombok, bundled by dukehoff-mcp for analysis (MIT; text from its jar)"),
+    (r"/modules/ext/lombok-nb-javac/lombok\.jar$", "MIT-lombok", "Project Lombok, bundled by Lombok for nb-javac for analysis (MIT; text from its jar)"),
+    (r"/modules/ext/lombok-nb-javac/(LICENSE-lombok|NOTICE)$", "(license text)", "Lombok for nb-javac: Lombok's license and its NOTICE, next to the jar"),
+    (r"com-dukehoff-netbeans-lombok\.(jar|xml)$", OWN, "Lombok for nb-javac (Dukehoff GmbH, github.com/dukehoff-gmbh/lombok-nb-javac)"),
     (r"org-jspecify-jspecify\.jar$", "Apache-2.0", "JSpecify annotations"),
     (r"com-google-errorprone-annotations\.jar$", "Apache-2.0", "Error Prone annotations"),
     (r"^(platform|extide)/VERSION\.txt$|org-openidex-util\.jar$|/updater\.jar$|^java/maven-nblib/|"

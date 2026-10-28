@@ -103,6 +103,7 @@ extra/config/Modules/bcpkix.xml	Apache-2.0	Apache NetBeans (not a third-party fi
 extra/config/Modules/bcprov.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/config/Modules/bcutil.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/config/Modules/com-dukehoff-mcp.xml	dukehoff-mcp-Apache-2.0	our module
+extra/config/Modules/com-dukehoff-netbeans-lombok.xml	dukehoff-mcp-Apache-2.0	Lombok for nb-javac (Dukehoff GmbH, github.com/dukehoff-gmbh/lombok-nb-javac)
 extra/config/Modules/com-google-errorprone-annotations.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/config/Modules/com-google-guava-failureaccess.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/config/Modules/com-google-guava.xml	Apache-2.0	Apache NetBeans (not a third-party file)
@@ -128,12 +129,15 @@ extra/modules/bcpkix.jar	MIT-bouncycastle	file name in NetBeans' LICENSE
 extra/modules/bcprov.jar	MIT-bouncycastle	file name in NetBeans' LICENSE
 extra/modules/bcutil.jar	MIT-bouncycastle	file name in NetBeans' LICENSE
 extra/modules/com-dukehoff-mcp.jar	dukehoff-mcp-Apache-2.0	our module
+extra/modules/com-dukehoff-netbeans-lombok.jar	dukehoff-mcp-Apache-2.0	Lombok for nb-javac (Dukehoff GmbH, github.com/dukehoff-gmbh/lombok-nb-javac)
 extra/modules/com-google-errorprone-annotations.jar	Apache-2.0	Error Prone annotations
 extra/modules/com-google-guava-failureaccess.jar	Apache-2.0	file name in NetBeans' LICENSE
 extra/modules/com-google-guava.jar	Apache-2.0	file name in NetBeans' LICENSE
 extra/modules/com-googlecode-javaewah-JavaEWAH.jar	Apache-2.0	file name in NetBeans' LICENSE
 extra/modules/com-jcraft-jzlib.jar	BSD-jzlib	file name in NetBeans' LICENSE
-extra/modules/ext/dukehoff-mcp/lombok.jar	MIT-lombok	Project Lombok, bundled by dukehoff-mcp for analysis (MIT; text from its jar)
+extra/modules/ext/lombok-nb-javac/LICENSE-lombok	(license text)	Lombok for nb-javac: Lombok's license and its NOTICE, next to the jar
+extra/modules/ext/lombok-nb-javac/NOTICE	(license text)	Lombok for nb-javac: Lombok's license and its NOTICE, next to the jar
+extra/modules/ext/lombok-nb-javac/lombok.jar	MIT-lombok	Project Lombok, bundled by Lombok for nb-javac for analysis (MIT; text from its jar)
 extra/modules/net-java-html-boot-script.jar	Apache-2.0	file name in NetBeans' LICENSE
 extra/modules/net-java-html-geo.jar	Apache-2.0	file name in NetBeans' LICENSE
 extra/modules/net-java-html-sound.jar	Apache-2.0	file name in NetBeans' LICENSE
@@ -154,6 +158,7 @@ extra/update_tracking/bcpkix.xml	Apache-2.0	Apache NetBeans (not a third-party f
 extra/update_tracking/bcprov.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/update_tracking/bcutil.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/update_tracking/com-dukehoff-mcp.xml	dukehoff-mcp-Apache-2.0	our module
+extra/update_tracking/com-dukehoff-netbeans-lombok.xml	dukehoff-mcp-Apache-2.0	Lombok for nb-javac (Dukehoff GmbH, github.com/dukehoff-gmbh/lombok-nb-javac)
 extra/update_tracking/com-google-errorprone-annotations.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/update_tracking/com-google-guava-failureaccess.xml	Apache-2.0	Apache NetBeans (not a third-party file)
 extra/update_tracking/com-google-guava.xml	Apache-2.0	Apache NetBeans (not a third-party file)

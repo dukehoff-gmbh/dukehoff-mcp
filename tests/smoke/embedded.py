@@ -51,10 +51,11 @@ def write(path, text):
 
 shutil.rmtree(work, ignore_errors=True)
 cluster = os.path.join(work, "dukehoff-ext", "nbcode", "dukehoffmcp")
-for rel in ["config/Modules/com-dukehoff-mcp.xml", "modules/com-dukehoff-mcp.jar", "update_tracking/com-dukehoff-mcp.xml"]:
-    os.makedirs(os.path.dirname(os.path.join(cluster, rel)), exist_ok=True)
-    shutil.copy(os.path.join(cluster_src, rel), os.path.join(cluster, rel))
-shutil.copytree(os.path.join(cluster_src, "modules", "ext", "dukehoff-mcp"), os.path.join(cluster, "modules", "ext", "dukehoff-mcp"))
+for module in ["com-dukehoff-mcp", "com-dukehoff-netbeans-lombok"]:
+    for rel in [f"config/Modules/{module}.xml", f"modules/{module}.jar", f"update_tracking/{module}.xml"]:
+        os.makedirs(os.path.dirname(os.path.join(cluster, rel)), exist_ok=True)
+        shutil.copy(os.path.join(cluster_src, rel), os.path.join(cluster, rel))
+shutil.copytree(os.path.join(cluster_src, "modules", "ext", "lombok-nb-javac"), os.path.join(cluster, "modules", "ext", "lombok-nb-javac"))
 
 project = os.path.join(work, "project")
 write(os.path.join(project, "pom.xml"), """<?xml version="1.0" encoding="UTF-8"?>

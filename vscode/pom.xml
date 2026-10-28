@@ -28,9 +28,9 @@
     <build>
         <plugins>
             <plugin>
-                <!-- the launcher (the proxy) to bin/, our module as the cluster nbcode/dukehoffmcp (the Apache
-                     NetBeans extension loads every cluster in other extensions' nbcode/), the license files;
-                     built by the modules before this one -->
+                <!-- the launcher (the proxy) to bin/, our modules (the Lombok one with Lombok and its license
+                     text) as the cluster nbcode/dukehoffmcp (the Apache NetBeans extension loads every cluster in
+                     other extensions' nbcode/), the license files; built by the modules before this one -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -49,16 +49,17 @@
                                     <fileset dir="${cluster}">
                                         <include name="config/Modules/com-dukehoff-mcp.xml"/>
                                         <include name="modules/com-dukehoff-mcp.jar"/>
-                                        <include name="modules/ext/dukehoff-mcp/**"/>
                                         <include name="update_tracking/com-dukehoff-mcp.xml"/>
+                                        <include name="config/Modules/com-dukehoff-netbeans-lombok.xml"/>
+                                        <include name="modules/com-dukehoff-netbeans-lombok.jar"/>
+                                        <include name="modules/ext/lombok-nb-javac/**"/>
+                                        <include name="update_tracking/com-dukehoff-netbeans-lombok.xml"/>
                                     </fileset>
                                 </copy>
                                 <!-- NetBeans keeps a cache of each cluster's modules and checks it against this
                                      file's time: without it nbcode kept running the module of an earlier install
                                      of the same extension version -->
                                 <touch file="${project.basedir}/nbcode/dukehoffmcp/.lastModified"/>
-                                <copy file="${project.basedir}/../runtime/src/main/licenses/licenses/MIT-lombok"
-                                      tofile="${project.basedir}/nbcode/dukehoffmcp/modules/ext/dukehoff-mcp/LICENSE-lombok"/>
                                 <copy file="${project.basedir}/../LICENSE" todir="${project.basedir}"/>
                                 <copy file="${project.basedir}/../NOTICE" todir="${project.basedir}"/>
                             </target>

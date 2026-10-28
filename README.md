@@ -238,7 +238,12 @@ This needs no runtime archive:
 1. Install the plugin: download `dukehoff-mcp-netbeans-<version>.nbm` from the
    [Releases page](https://github.com/dukehoff-gmbh/dukehoff-mcp/releases), then in NetBeans 31 or
    newer Tools > Plugins > Downloaded > Add Plugins..., Install, and restart if asked.
-   The IDE then starts the server by itself.
+   The IDE then starts the server by itself. Projects on Lombok 1.18.46 or older: NetBeans 31 parses with
+   a newer javac than those Lombok versions support, so NetBeans (and the tools) see no generated members.
+   Installing the plugin from Tools > Plugins brings the plugin
+   [Lombok for nb-javac](https://github.com/dukehoff-gmbh/lombok-nb-javac) along when it is offered there
+   (a current Lombok for NetBeans' analysis; your build stays as it is); with a downloaded NBM, install
+   that plugin too. The runtime and the VS Code extension include it.
 2. Download `dukehoff-mcp-launcher-<version>.jar` from the same release and let it print the
    registration with `--ide`, e.g. `java -jar dukehoff-mcp-launcher-<version>.jar --config claude --ide`.
 3. Open the project in NetBeans, then start the agent in its folder.
@@ -381,7 +386,7 @@ python3 tests/smoke/project-types.py runtime/target/dukehoffmcp/bin/dukehoff-mcp
 
 The runtime is a headless NetBeans built from the NetBeans clusters on Maven Central (release set in
 `pom.xml`, `netbeans.version`, currently NetBeans 31), without the modules a headless server does
-not need, plus the module of this repository. It ships `LICENSE`, `NOTICE` and the license texts of
+not need, plus the module of this repository and the plugin Lombok for nb-javac. It ships `LICENSE`, `NOTICE` and the license texts of
 everything bundled; see [runtime/LICENSING.md](runtime/LICENSING.md). The module uses public NetBeans
 APIs only and also runs in a NetBeans 31 installation (unpack the NBM's `netbeans/` folder into the
 `java/` cluster and copy `launcher/dukehoff-mcp` to `java/bin/`).
