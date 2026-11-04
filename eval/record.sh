@@ -14,9 +14,16 @@
 #
 # Usage: record.sh --task DIR --repo DIR --dukehoff-mcp PATH [--workspace SUBDIR] [--model M]
 #                  [--modes baseline,netbeans] [--allow CMDS] [--permission-mode MODE]
-#                  [--hints FILE] [--size COLSxROWS] [--timeout MINUTES] [--idle SECONDS]
+#                  [--hints FILE] [--size COLSxROWS] [--timeout MINUTES] [--idle SECONDS] [--copy] [--ide]
 #   --task       a task directory with prompt.md and check.sh (e.g. oss-tasks/03-rename-overload)
-#   --repo       a git checkout; each pane gets a clone of its HEAD (uncommitted changes are not copied)
+#   --repo       a git checkout; each pane gets a clone of its HEAD (uncommitted changes are not copied;
+#                see --copy)
+#   --copy       give each pane a copy of the repository with its ignored files (the build outputs of a
+#                built checkout, e.g. NetBeans' nbbuild/netbeans) instead of a clone: an APFS clone on
+#                macOS, reset to HEAD (other uncommitted changes are dropped, ignored files kept)
+#   --ide        the netbeans pane uses the running NetBeans IDE (dukehoff-mcp --ide) instead of a server of
+#                its own; the caller has prepared the pane's clone and opened it in the IDE, so it is not reset
+#                (for recording the IDE window alongside the terminal)
 #   --workspace  the project inside the repository, where the agent starts (default: the root)
 #   --modes      one mode records a single pane
 #   --allow      further shell commands the agent may run, comma separated (as in run.sh)
@@ -29,7 +36,8 @@
 #                the real timing and the pane titles show the real elapsed time
 # Environment: RECORD_DIR output directory (default ~/dukehoff-recordings); the panes' clones and the
 #              server's data stay in its work/ folder, which shows in the video and must not lie
-#              under ~/.claude, where Claude Code refuses edits
+#              under ~/.claude, where Claude Code refuses edits. RECORD_OUT the recording's own folder
+#              (default RECORD_DIR/<time>-<task>)
 # Needs: claude, tmux, asciinema (3.x), agg, ffmpeg, python3, git
 # Output: $RECORD_DIR/<time>-<task>/: recording.cast, recording.gif, recording.mp4,
 #         summary.md (real time, check, tool calls per pane), the checks and the diffs
@@ -52,6 +60,8 @@ HINTS=
 SIZE=200x50
 TIMEOUT=20
 IDLE=2
+COPY=
+IDE=
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -67,6 +77,8 @@ while [ $# -gt 0 ]; do
         --size) SIZE=$2; shift 2 ;;
         --timeout) TIMEOUT=$2; shift 2 ;;
         --idle) IDLE=$2; shift 2 ;;
+        --copy) COPY=1; shift ;;
+        --ide) IDE=1; shift ;;
         *) echo "unknown argument $1" >&2; exit 2 ;;
     esac
 done
@@ -87,7 +99,7 @@ if [ -z "${DUKEHOFF_MCP_RECORD_AWAKE:-}" ] && command -v caffeinate > /dev/null;
     export DUKEHOFF_MCP_RECORD_AWAKE=1
     exec caffeinate -i "$0" --task "$TASK" --repo "$REPO" --workspace "$WORKSPACE" --dukehoff-mcp "$DUKEHOFF_MCP" \
         ${MODEL:+--model "$MODEL"} --modes "$MODES" ${ALLOW:+--allow "$ALLOW"} --permission-mode "$PERMISSION_MODE" \
-        ${HINTS:+--hints "$HINTS"} --size "$SIZE" --timeout "$TIMEOUT" --idle "$IDLE"
+        ${HINTS:+--hints "$HINTS"} --size "$SIZE" --timeout "$TIMEOUT" --idle "$IDLE" ${COPY:+--copy} ${IDE:+--ide}
 fi
 
 # the recorded sessions must be ordinary top-level sessions, not children of a Claude Code session this
@@ -101,7 +113,7 @@ export AWS_CREDENTIAL_PROFILES_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/n
     AWS_EC2_METADATA_DISABLED=true
 
 task=$(basename "$TASK")
-OUT=$RECORD_DIR/$(date +%Y%m%d-%H%M%S)-$task
+OUT=${RECORD_OUT:-$RECORD_DIR/$(date +%Y%m%d-%H%M%S)-$task}
 mkdir -p "$OUT"
 echo "Output: $OUT"
 SOCKET=dukehoff-record
@@ -128,6 +140,21 @@ pane_dir() {
 fresh_copy() {
     local copy
     copy=$(pane_dir "$1")/$NAME
+    if [ -n "$IDE" ] && [ "$1" = netbeans ]; then
+        # open in the IDE: prepared by the caller
+        [ -d "$copy" ] || exit 1
+        if [ "$WORKSPACE" = . ]; then echo "$copy"; else echo "$copy/$WORKSPACE"; fi
+        return
+    fi
+    if [ -n "$COPY" ]; then
+        # a fresh copy each time: a take's build outputs (e.g. a rebuilt module) must not reach the next
+        rm -rf "$copy"
+        mkdir -p "$(dirname "$copy")"
+        cp -Rc "$REPO" "$copy" 2> /dev/null || cp -R --reflink=auto "$REPO" "$copy" || exit 1
+        git -C "$copy" checkout -q --force --detach "$SHA" && git -C "$copy" clean -fdq || exit 1
+        if [ "$WORKSPACE" = . ]; then echo "$copy"; else echo "$copy/$WORKSPACE"; fi
+        return
+    fi
     if [ ! -d "$copy/.git" ]; then
         mkdir -p "$(dirname "$copy")"
         git clone -q --no-checkout "$REPO" "$copy" || exit 1
@@ -176,10 +203,12 @@ for mode in "${modes[@]}"; do
         # every file for a license header)
         rm -f "$(pane_dir "$mode")/CLAUDE.md"
         [ -n "$HINTS" ] && cp "$HINTS" "$(pane_dir "$mode")/CLAUDE.md"
-        python3 -c 'import json,sys; print(json.dumps({"mcpServers": {"java": {"command": sys.argv[1], "args": ["--data", sys.argv[2], sys.argv[3]]}}}))' \
-            "$DUKEHOFF_MCP" "$WORKDIR/nb-data" "$work" > "$OUT/$mode.mcp.json"
+        data=$WORKDIR/nb-data
+        [ -n "$IDE" ] && data=--ide
+        python3 -c 'import json,sys; print(json.dumps({"mcpServers": {"java": {"command": sys.argv[1], "args": [sys.argv[2], sys.argv[3]] if sys.argv[2] == "--ide" else ["--data", sys.argv[2], sys.argv[3]]}}}))' \
+            "$DUKEHOFF_MCP" "$data" "$work" > "$OUT/$mode.mcp.json"
         echo "Warming up the server for $work..."
-        python3 "$HERE/warmup.py" "$DUKEHOFF_MCP" "$WORKDIR/nb-data" "$work" || { echo "warm-up failed" >&2; exit 1; }
+        python3 "$HERE/warmup.py" "$DUKEHOFF_MCP" "$data" "$work" || { echo "warm-up failed" >&2; exit 1; }
     else
         echo '{"mcpServers": {}}' > "$OUT/$mode.mcp.json"
     fi
@@ -235,6 +264,8 @@ for mode in "${modes[@]}"; do
     i=$((i + 1))
 done
 
+# the cast's start as wall-clock time, so a screen capture of the IDE can be lined up with it
+python3 -c 'import time; print(time.time())' > "$OUT/cast.start"
 asciinema rec --headless --quiet --overwrite --window-size "$SIZE" --idle-time-limit "$IDLE" \
     --title "$task" --command "tmux -L $SOCKET attach -t rec" "$OUT/recording.cast" &
 recorder=$!
@@ -314,7 +345,7 @@ for mode in "${modes[@]}"; do
     (cd "$work" && git add -A && git diff --cached) > "$OUT/$mode.diff"
 done
 python3 "$HERE/record_summary.py" "$OUT" "${modes[@]}" | tee "$OUT/summary.md"
-if [[ ",$MODES," == *",netbeans,"* ]]; then
+if [[ ",$MODES," == *",netbeans,"* ]] && [ -z "$IDE" ]; then
     "$DUKEHOFF_MCP" --data "$WORKDIR/nb-data" --stop "$(cat "$OUT/netbeans.work")" 2>&1 | sed 's/^/    /'
 fi
 
