@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""Starts dukehoff-mcp on a workspace, waits until it is indexed, then stops it again."""
+"""Starts dukehoff-mcp on a workspace, waits until it is indexed, then stops it again. With --ide in place of
+the data folder it connects to the running NetBeans IDE instead and waits until the IDE has the
+workspace's project open and scanned; the IDE keeps running."""
 
 import json
 import subprocess
@@ -11,7 +13,8 @@ import sys
 import time
 
 nb_mcp, data, workspace = sys.argv[1:4]
-server = subprocess.Popen([nb_mcp, "--data", data, workspace], stdin=subprocess.PIPE,
+ide = data == "--ide"
+server = subprocess.Popen([nb_mcp, "--ide", workspace] if ide else [nb_mcp, "--data", data, workspace], stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
 next_id = 0
 
@@ -38,7 +41,8 @@ status = "status" if "status" in names else "workspace_status"
 start = time.time()
 while True:
     text = request("tools/call", {"name": status, "arguments": {}})["result"]["content"][0]["text"]
-    if "State: ready" in text:
+    # the IDE answers "ready" before it has opened the workspace's project
+    if "State: ready" in text and (not ide or "Projects:" in text):
         break
     if "State: failed" in text or time.time() - start > 900:
         sys.exit(text)
@@ -48,6 +52,9 @@ server.stdin.close()
 try:
     server.wait(60)
 except subprocess.TimeoutExpired:
+    if ide:
+        server.kill()  # only the client; the IDE keeps running
+        sys.exit(0)
     # NetBeans sometimes does not exit after the client goes away (seen 2026-10-02); a leftover
     # instance would hold the userdir lock and take over the next start
     print("dukehoff-mcp did not exit within 60 s after stdin was closed; killing it", file=sys.stderr)

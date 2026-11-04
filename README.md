@@ -430,6 +430,8 @@ own tools. `eval/nb-tasks` has three tasks for the `java/` folder of an Apache N
 expected answers fit apache/netbeans at commit `c080a039d`.
 
 `eval/record.sh` records a task as a side-by-side terminal video, without and with the server (usage in the script).
+`eval/demo-tasks` has short tasks made for recordings: the compile check after making a method private
+(`compile-check`, Commons Lang) and the `jakarta` rule pack on Spring PetClinic (`jakarta-petclinic`).
 
 ## Design notes
 
